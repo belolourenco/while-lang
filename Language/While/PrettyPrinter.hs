@@ -16,11 +16,6 @@ class Pretty a where
   prettyPrefix p = (p <>) . pretty
   prettySufix  p = (<> p) . pretty
 
--- | Abreviations
-
-l = text "("
-r = text ")"
-
 -- | While Language Pretty Printer
   
 instance (Pretty a) => Pretty (Maybe a) where
@@ -40,12 +35,17 @@ instance (Pretty a, Pretty b) => Pretty (Either a b) where
 instance Pretty Doc where
   pretty = id
 
+-- | Abreviations
+
+l = text "("
+r = text ")"
+
 instance Pretty Varname where
   pretty x = text x
 
 instance Pretty Aexp where
   pretty (Numeral i)  = text $ show i
-  pretty (Variable n) = text n
+  pretty (Variable n) = pretty n
   pretty (Aadd e1 e2) = l <> (pretty e1) <> (text " + ") <> (pretty e2) <> r
   pretty (Asub e1 e2) = l <> (pretty e1) <> (text " - ") <> (pretty e2) <> r
   pretty (Amul e1 e2) = l <> (pretty e1) <> (text " * ") <> (pretty e2) <> r
@@ -56,7 +56,7 @@ instance Pretty Bexp where
   pretty Bfalse       = text "false"
   pretty (Beq e1 e2)  = l <> (pretty e1) <> (text " = ") <> (pretty e2) <> r
   pretty (Bleq e1 e2) = l <> (pretty e1) <> (text " <= ") <> (pretty e2) <> r
-  pretty (Bneg e1)    = l <> (text " ! ") <> (pretty e1) <> r
+  pretty (Bneg e1)    = l <> (text "!") <> (pretty e1) <> r
   pretty (Band e1 e2) = l <> (pretty e1) <> (text " ^ ") <> (pretty e2) <> r
 
 instance Pretty Stm where

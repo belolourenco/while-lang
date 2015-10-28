@@ -19,6 +19,9 @@ varsBexp Btrue        = []
 varsBexp Bfalse       = []
 varsBexp (Beq e1 e2)  = (varsExp e1) ++ (varsExp e2)
 varsBexp (Bleq e1 e2) = (varsExp e1) ++ (varsExp e2)
+varsBexp (Bl e1 e2)   = (varsExp e1) ++ (varsExp e2)
+varsBexp (Bg e1 e2)   = (varsExp e1) ++ (varsExp e2)
+varsBexp (Bgeq e1 e2) = (varsExp e1) ++ (varsExp e2)
 varsBexp (Bneg b)     = varsBexp b
 varsBexp (Band b1 b2) = (varsBexp b1) ++ (varsBexp b2)
 
@@ -27,24 +30,30 @@ vars :: Stm -> [Varname]
 vars = nub.aux
   where
     aux :: Stm -> [Varname]
-    aux (Sass v e)    = v:(varsExp e)
-    aux Sskip         = []
-    aux (Scomp s1 s2) = (aux s1) ++ (aux s2)
-    aux (Sif b s1 s2) = (varsBexp b) ++ (aux s1) ++ (aux s2)
-    aux (Swhile b s)  = (varsBexp b) ++ (aux s)
-    aux (Stry s1 s2)  = (aux s1) ++ (aux s2)
+    aux (Sass v e)         = v:(varsExp e)
+    aux Sskip              = []
+    aux (Sassume b)        = varsBexp b
+    aux (Sassert b)        = varsBexp b
+    aux (Scomp s1 s2)      = (aux s1) ++ (aux s2)
+    aux (Sif b s1 s2)      = (varsBexp b) ++ (aux s1) ++ (aux s2)
+    aux (Swhile b s)       = (varsBexp b) ++ (aux s)
+    aux (SwhileInv b i s)  = (varsBexp b) ++ (varsBexp i) ++ (aux s)
+    aux (Stry s1 s2)       = (aux s1) ++ (aux s2)
 
 -- | Returns all variables assigned in the given Stm
 asgn :: Stm -> [Varname]
 asgn = nub.aux
   where
     aux :: Stm -> [Varname]
-    aux (Sass v e)    = [v]
-    aux Sskip         = []
-    aux (Scomp s1 s2) = (aux s1) ++ (aux s2)
-    aux (Sif b s1 s2) = (aux s1) ++ (aux s2)
-    aux (Swhile b s)  = (aux s)
-    aux (Stry s1 s2)  = (aux s1) ++ (aux s2)
+    aux (Sass v e)        = [v]
+    aux Sskip             = []
+    aux (Sassume b)       = []
+    aux (Sassert b)       = []
+    aux (Scomp s1 s2)     = (aux s1) ++ (aux s2)
+    aux (Sif b s1 s2)     = (aux s1) ++ (aux s2)
+    aux (Swhile b s)      = (aux s)
+    aux (SwhileInv b i s) = (aux s)
+    aux (Stry s1 s2)      = (aux s1) ++ (aux s2)
 
 rnmToAssign :: Rnm -> StmSA
 rnmToAssign [] = SskipSA

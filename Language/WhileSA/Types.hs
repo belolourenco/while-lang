@@ -26,6 +26,9 @@ data BexpSA
   | BfalseSA
   | BeqSA AexpSA AexpSA
   | BleqSA AexpSA AexpSA
+  | BlSA AexpSA AexpSA
+  | BgSA AexpSA AexpSA
+  | BgeqSA AexpSA AexpSA
   | BnegSA BexpSA
   | BandSA BexpSA BexpSA
   deriving (Show, Eq)
@@ -34,8 +37,11 @@ data BexpSA
 data StmSA
   = SassSA VarnameSA AexpSA
   | SskipSA
+  | SassumeSA Bexp
+  | SassertSA Bexp
   | ScompSA StmSA StmSA
   | SifSA BexpSA StmSA StmSA
   | SforSA Rnm BexpSA Rnm StmSA
+  | SforInvSA Rnm BexpSA Rnm BexpSA StmSA
   | StrySA StmSA StmSA
   deriving (Show, Eq)

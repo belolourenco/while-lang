@@ -136,6 +136,12 @@ tsaBexp (Beq e1 e2)  = tsaAexp e1 >>= \x -> tsaAexp e2
                                   >>= \y -> return $ BeqSA x y
 tsaBexp (Bleq e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
                                   >>= \y -> return $ BleqSA x y
+tsaBexp (Bl e1 e2)   = tsaAexp e1 >>= \x -> tsaAexp e2 
+                                  >>= \y -> return $ BlSA x y
+tsaBexp (Bg e1 e2)   = tsaAexp e1 >>= \x -> tsaAexp e2 
+                                  >>= \y -> return $ BgSA x y
+tsaBexp (Bgeq e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
+                                  >>= \y -> return $ BgeqSA x y
 tsaBexp (Bneg b)     = tsaBexp b >>= \x -> return $ BnegSA x
 tsaBexp (Band b1 b2) = tsaBexp b1 >>= \x -> tsaBexp b2
                                   >>= \y -> return $ BandSA x y
@@ -170,6 +176,33 @@ tsa (Swhile b s) = do
   let dom_u = map fst u
   mapM_ (\x -> replacesVar (fst x) (jump $ snd x)) dom_u
   return $ ScompSA  (SforSA i b' u s')
+                    (rnmToAssign $ upd dom_u)
+  where
+    create_i :: [Varname] -> State VersionList Rnm
+    create_i []     = return []
+    create_i (n:ns) = getVarVer n >>= \v -> create_i ns 
+                                  >>= \ns' -> return $ ((n,new v), (n, v)):ns'
+
+    upd_v' :: [Varname] -> State VersionList VersionList
+    upd_v' []     = get >>= return
+    upd_v' (n:ns) = newVar n >> upd_v' ns
+
+    create_u :: [Varname] -> VersionList -> State VersionList Rnm
+    create_u []     vl = return []
+    create_u (n:ns) vl = getVarVer n >>= \v' -> create_u ns vl
+                                     >>= \ns' -> return $ ((n, new $ getVarVerAux n vl),(n,v')):ns'
+tsa (SwhileInv b inv s) = do
+  let asgn_c = asgn s
+  v <- get
+  i <- create_i asgn_c
+  v' <- upd_v' asgn_c
+  b' <- tsaBexp b
+  inv' <- tsaBexp inv
+  s' <- tsa s
+  u <- create_u asgn_c v
+  let dom_u = map fst u
+  mapM_ (\x -> replacesVar (fst x) (jump $ snd x)) dom_u
+  return $ ScompSA  (SforInvSA i b' u inv' s')
                     (rnmToAssign $ upd dom_u)
   where
     create_i :: [Varname] -> State VersionList Rnm

@@ -58,23 +58,35 @@ instance Pretty Bexp where
   pretty Bfalse       = text "false"
   pretty (Beq e1 e2)  = l <> (pretty e1) <> (text " = ") <> (pretty e2) <> r
   pretty (Bleq e1 e2) = l <> (pretty e1) <> (text " <= ") <> (pretty e2) <> r
+  pretty (Bl e1 e2)   = l <> (pretty e1) <> (text " < ") <> (pretty e2) <> r
+  pretty (Bg e1 e2)   = l <> (pretty e1) <> (text " > ") <> (pretty e2) <> r
+  pretty (Bgeq e1 e2) = l <> (pretty e1) <> (text " >= ") <> (pretty e2) <> r
   pretty (Bneg e1)    = l <> (text "!") <> (pretty e1) <> r
   pretty (Band e1 e2) = l <> (pretty e1) <> (text " ^ ") <> (pretty e2) <> r
 
 instance Pretty Stm where
-  pretty (Sass n e)     = (pretty n) <> (text " := ") <> (pretty e)
-  pretty Sskip          = text "skip"
-  pretty (Scomp s1 s2)  = (pretty s1) <> (text ";") $$ 
-                          (pretty s2)
-  pretty (Sif b st sf)  = (text "if") <+> (pretty b) <+> (text "then") $$
-                          (nest 2 $ pretty st) $$ 
-                          (text "else") $$
-                          (nest 2 $ pretty sf) $$
-                          (text "end")
-  pretty (Swhile b s)   = (text "while") <+> (pretty b) <+> (text "do") $$
-                          (nest 2 $ pretty s) $$
-                          (text "od")
-  pretty (Stry s1 s2)   = (text "try") $$
-                          (nest 2 $ pretty s1) $$
-                          (text "catch") $$
-                          (nest 2 $ pretty s2)
+  pretty (Sass n e)         = (pretty n) <> (text " := ") <> (pretty e)
+  pretty Sskip              = text "skip"
+  pretty (Sassume b)        = text "assume " <> (pretty b)
+  pretty (Sassert b)        = text "assert " <> (pretty b)
+  pretty (Scomp s1 s2)      = (pretty s1) <> (text ";") $$ 
+                              (pretty s2)
+  pretty (Sif b st sf)      = (text "if") <+> (pretty b) <+> (text "then") $$
+                              (nest 2 $ pretty st) $$ 
+                              (text "else") $$
+                              (nest 2 $ pretty sf) $$
+                              (text "end")
+  pretty (Swhile b s)       = (text "while") <+> (pretty b) <+> (text "do") $$
+                              (nest 2 $ pretty s) $$
+                              (text "od")
+  pretty (SwhileInv b i s)  = (text "while") <+> (pretty b) 
+                                             <+> (text "do") 
+                                             <+> (text "{")
+                                             <>  (pretty i) 
+                                             <>  (text "}") $$
+                              (nest 2 $ pretty s) $$
+                              (text "od")
+  pretty (Stry s1 s2)       = (text "try") $$
+                              (nest 2 $ pretty s1) $$
+                              (text "catch") $$
+                              (nest 2 $ pretty s2)    

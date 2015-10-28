@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
+-- https://hackage.haskell.org/package/pretty-1.1.3.2/docs/Text-PrettyPrint.html
+
 module Language.While.PrettyPrinter where
 
 import Text.PrettyPrint as PP
@@ -67,9 +69,11 @@ instance Pretty Stm where
   pretty (Sif b st sf)  = (text "if") <+> (pretty b) <+> (text "then") $$
                           (nest 2 $ pretty st) $$ 
                           (text "else") $$
-                          (nest 2 $ pretty sf)
+                          (nest 2 $ pretty sf) $$
+                          (text "end")
   pretty (Swhile b s)   = (text "while") <+> (pretty b) <+> (text "do") $$
-                          (nest 2 $ pretty s)
+                          (nest 2 $ pretty s) $$
+                          (text "od")
   pretty (Stry s1 s2)   = (text "try") $$
                           (nest 2 $ pretty s1) $$
                           (text "catch") $$

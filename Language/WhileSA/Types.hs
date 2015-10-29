@@ -37,8 +37,8 @@ data BexpSA
 data StmSA
   = SassSA VarnameSA AexpSA
   | SskipSA
-  | SassumeSA Bexp
-  | SassertSA Bexp
+  | SassumeSA BexpSA
+  | SassertSA BexpSA
   | ScompSA StmSA StmSA
   | SifSA BexpSA StmSA StmSA
   | SforSA Rnm BexpSA Rnm StmSA

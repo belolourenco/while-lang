@@ -48,6 +48,8 @@ tsa (Sass n e)    = tsaAexp e >>= \e' -> nextVar n
                            >>  getVar n
                            >>= \n' -> return $ SassSA n' e'
 tsa Sskip         = return SskipSA
+tsa (Sassume b)   = tsaBexp b >>= return.SassumeSA
+tsa (Sassert b)   = tsaBexp b >>= return.SassertSA
 tsa (Scomp s1 s2) = tsa s1 >>= \s1' -> tsa s2
                            >>= \s2' -> return $ ScompSA s1' s2'
 tsa (Sif b s1 s2) = do

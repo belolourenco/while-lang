@@ -1,14 +1,11 @@
 module Language.Translations.TranslationHavoc where
 
 import Control.Monad.State
-import Text.PrettyPrint
 
 import Language.While.Utils.Utils
 import Language.While.Parser
 import Language.While.Types
-import Language.While.PrettyPrinter
 import Language.WhileSA.Types
-import Language.WhileSA.PrettyPrinter
 import Language.Translations.Base
 import Language.Translations.TranslationFor
 
@@ -50,9 +47,9 @@ tsaLF (SwhileInv b inv s) = do
 tsaLF s = tsa s
 --tsa (Stry Stm Stm
 
-transFileSALF :: FilePath -> IO ()
+transFileSALF :: FilePath -> IO (Either String StmSA)
 transFileSALF path = do
   p <- loadFile path
   case p of
-    Left e -> putStrLn.show $ e
-    Right stm -> putStrLn.render.pretty $ evalState (tsaLF stm) (initV $ vars stm)
+    Left e -> return.Left $ e
+    Right stm -> return.Right $ evalState (tsaLF stm) (initV $ vars stm)

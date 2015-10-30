@@ -1,14 +1,11 @@
 module Language.Translations.TranslationFor where
 
 import Control.Monad.State
-import Text.PrettyPrint
 
 import Language.While.Utils.Utils
 import Language.While.Parser
 import Language.While.Types
-import Language.While.PrettyPrinter
 import Language.WhileSA.Types
-import Language.WhileSA.PrettyPrinter
 import Language.Translations.Base
 
 -- * Translation for SA-For language
@@ -118,9 +115,9 @@ tsa (SwhileInv b inv s) = do
                                      >>= \ns' -> return $ ((n, new $ getVarVerAux n vl),(n,v')):ns'
 --tsa (Stry Stm Stm
 
-transFileSAFor :: FilePath -> IO ()
+transFileSAFor :: FilePath -> IO (Either String StmSA)
 transFileSAFor path = do
   p <- loadFile path
   case p of
-    Left e -> putStrLn.show $ e
-    Right stm -> putStrLn.render.pretty $ evalState (tsa stm) (initV $ vars stm)
+    Left e -> return.Left $ e
+    Right stm -> return.Right $ evalState (tsa stm) (initV $ vars stm)

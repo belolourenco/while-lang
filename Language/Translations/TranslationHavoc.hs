@@ -23,8 +23,10 @@ tsaLF (Sif b s1 s2) = do
   s2' <- tsaLF s2
   v'' <- get
   put $ sup v' v''
-  return $ SifSA b' (ScompSA s1' (rnmToAssign $ merge v' v'')) 
-                    (ScompSA s2' (rnmToAssign $ merge v'' v'))
+  let mergeInThen = (rnmToAssign $ merge v' v'')
+  let mergeInElse = (rnmToAssign $ merge v'' v')
+  return $ SifSA b' (if mergeInThen == SskipSA then s1' else ScompSA s1' mergeInThen)
+                    (if mergeInElse == SskipSA then s2' else ScompSA s2' mergeInElse)
 tsaLF (Swhile b s) = error "Loop invariants are mandatory for this translation to proceed"
 tsaLF (SwhileInv b inv s) = do
   let asgn_s = asgn s

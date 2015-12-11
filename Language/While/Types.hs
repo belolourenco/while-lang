@@ -25,6 +25,7 @@ data Aexp
 data Bexp
   = Btrue
   | Bfalse
+  | BVariable Varname 
   | Beq Aexp Aexp
   | Bleq Aexp Aexp
   | Bl Aexp Aexp
@@ -32,6 +33,8 @@ data Bexp
   | Bgeq Aexp Aexp
   | Bneg Bexp
   | Band Bexp Bexp
+  | Bor Bexp Bexp
+  | Bimpl Bexp Bexp
   deriving (Show, Eq)
 
 -- | Statements, including try-catch clauses.

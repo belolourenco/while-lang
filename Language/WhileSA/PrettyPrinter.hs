@@ -30,13 +30,16 @@ instance Pretty AexpSA where
 instance Pretty BexpSA where
   pretty BtrueSA        = text "true"
   pretty BfalseSA       = text "false"
+  pretty (BVariableSA n)= pretty n
   pretty (BeqSA e1 e2)  = l <> (pretty e1) <> (text " = ") <> (pretty e2) <> r
   pretty (BleqSA e1 e2) = l <> (pretty e1) <> (text " <= ") <> (pretty e2) <> r
   pretty (BlSA e1 e2)   = l <> (pretty e1) <> (text " < ") <> (pretty e2) <> r
   pretty (BgSA e1 e2)   = l <> (pretty e1) <> (text " > ") <> (pretty e2) <> r
   pretty (BgeqSA e1 e2) = l <> (pretty e1) <> (text " >= ") <> (pretty e2) <> r
   pretty (BnegSA e1)    = l <> (text "!") <> (pretty e1) <> r
-  pretty (BandSA e1 e2) = l <> (pretty e1) <> (text " ^ ") <> (pretty e2) <> r
+  pretty (BandSA e1 e2) = l <> (pretty e1) <> (text " && ") <> (pretty e2) <> r
+  pretty (BorSA e1 e2) = l <> (pretty e1) <> (text " || ") <> (pretty e2) <> r
+  pretty (BimplSA e1 e2) = l <> (pretty e1) <> (text " -> ") <> (pretty e2) <> r
 
 instance Pretty StmSA where
   pretty (SassSA n e)     = (pretty n) <> (text " := ") <> (pretty e)

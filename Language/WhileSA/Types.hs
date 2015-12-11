@@ -24,6 +24,7 @@ data AexpSA
 data BexpSA
   = BtrueSA
   | BfalseSA
+  | BVariableSA VarnameSA
   | BeqSA AexpSA AexpSA
   | BleqSA AexpSA AexpSA
   | BlSA AexpSA AexpSA
@@ -31,6 +32,8 @@ data BexpSA
   | BgeqSA AexpSA AexpSA
   | BnegSA BexpSA
   | BandSA BexpSA BexpSA
+  | BorSA BexpSA BexpSA
+  | BimplSA BexpSA BexpSA
   deriving (Show, Eq)
 
 -- | Statements, including try-catch clauses.

@@ -56,13 +56,16 @@ instance Pretty Aexp where
 instance Pretty Bexp where
   pretty Btrue        = text "true"
   pretty Bfalse       = text "false"
+  pretty (BVariable v)= pretty v
   pretty (Beq e1 e2)  = l <> (pretty e1) <> (text " = ") <> (pretty e2) <> r
   pretty (Bleq e1 e2) = l <> (pretty e1) <> (text " <= ") <> (pretty e2) <> r
   pretty (Bl e1 e2)   = l <> (pretty e1) <> (text " < ") <> (pretty e2) <> r
   pretty (Bg e1 e2)   = l <> (pretty e1) <> (text " > ") <> (pretty e2) <> r
   pretty (Bgeq e1 e2) = l <> (pretty e1) <> (text " >= ") <> (pretty e2) <> r
   pretty (Bneg e1)    = l <> (text "!") <> (pretty e1) <> r
-  pretty (Band e1 e2) = l <> (pretty e1) <> (text " ^ ") <> (pretty e2) <> r
+  pretty (Band e1 e2) = l <> (pretty e1) <> (text " && ") <> (pretty e2) <> r
+  pretty (Bor e1 e2) = l <> (pretty e1) <> (text " || ") <> (pretty e2) <> r
+  pretty (Bimpl e1 e2) = l <> (pretty e1) <> (text " -> ") <> (pretty e2) <> r
 
 instance Pretty Stm where
   pretty (Sass n e)         = (pretty n) <> (text " := ") <> (pretty e)

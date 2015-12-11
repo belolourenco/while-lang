@@ -25,6 +25,7 @@ tsaAexp (Adiv e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2
 tsaBexp :: Bexp -> State VersionList BexpSA
 tsaBexp Btrue        = return BtrueSA
 tsaBexp Bfalse       = return BfalseSA
+tsaBexp (BVariable n)= getVar n >>= \x -> return $ BVariableSA x
 tsaBexp (Beq e1 e2)  = tsaAexp e1 >>= \x -> tsaAexp e2 
                                   >>= \y -> return $ BeqSA x y
 tsaBexp (Bleq e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
@@ -38,6 +39,10 @@ tsaBexp (Bgeq e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2
 tsaBexp (Bneg b)     = tsaBexp b >>= \x -> return $ BnegSA x
 tsaBexp (Band b1 b2) = tsaBexp b1 >>= \x -> tsaBexp b2
                                   >>= \y -> return $ BandSA x y
+tsaBexp (Bor b1 b2) = tsaBexp b1 >>= \x -> tsaBexp b2
+                                  >>= \y -> return $ BorSA x y
+tsaBexp (Bimpl b1 b2) = tsaBexp b1 >>= \x -> tsaBexp b2
+                                  >>= \y -> return $ BimplSA x y
 
 
 tsa :: Stm -> State VersionList StmSA

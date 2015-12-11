@@ -91,7 +91,8 @@ booleanAtom
   =   (try (symbol "true") >> truthVal Btrue)
   <|> (try (symbol "false") >> truthVal Bfalse)
   <|> (try $ AexpW <$> arithmeticExpr)
-  <|> parens booleanExpr'
+  -- <|> (try $ BVariable <$> identifier >>= truthVal)
+  <|> (parens booleanExpr')
   where truthVal = return . BexpW
 
 -- | Table of supported boolean operations.
@@ -102,7 +103,9 @@ booleanOperation =
    , binaryOp "<"   bl AssocLeft
    , binaryOp ">"   bg AssocLeft
    , binaryOp ">="  bgeq AssocLeft
-   , binaryOp "^"   band AssocLeft ]
+   , binaryOp "&&"   band AssocLeft
+   , binaryOp "||"   bor AssocLeft
+   , binaryOp "->"   bimpl AssocLeft ]
   ]
   where
   bneg (BexpW b) = BexpW $ Bneg b
@@ -112,6 +115,8 @@ booleanOperation =
   bg (AexpW a1) (AexpW a2) = BexpW $ Bg a1 a2
   bgeq (AexpW a1) (AexpW a2) = BexpW $ Bgeq a1 a2
   band (BexpW b1) (BexpW b2) = BexpW $ Band b1 b2
+  bor (BexpW b1) (BexpW b2) = BexpW $ Bor b1 b2
+  bimpl (BexpW b1) (BexpW b2) = BexpW $ Bimpl b1 b2
 
 -- | Parse a boolean expression.
 booleanExpr = do

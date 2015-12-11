@@ -17,6 +17,7 @@ varsExp (Adiv e1 e2)  = (varsExp e1) ++ (varsExp e2)
 varsBexp :: Bexp -> [Varname]
 varsBexp Btrue        = []
 varsBexp Bfalse       = []
+varsBexp (BVariable n) = [n]
 varsBexp (Beq e1 e2)  = (varsExp e1) ++ (varsExp e2)
 varsBexp (Bleq e1 e2) = (varsExp e1) ++ (varsExp e2)
 varsBexp (Bl e1 e2)   = (varsExp e1) ++ (varsExp e2)
@@ -24,6 +25,8 @@ varsBexp (Bg e1 e2)   = (varsExp e1) ++ (varsExp e2)
 varsBexp (Bgeq e1 e2) = (varsExp e1) ++ (varsExp e2)
 varsBexp (Bneg b)     = varsBexp b
 varsBexp (Band b1 b2) = (varsBexp b1) ++ (varsBexp b2)
+varsBexp (Bor b1 b2) = (varsBexp b1) ++ (varsBexp b2)
+varsBexp (Bimpl b1 b2) = (varsBexp b1) ++ (varsBexp b2)
 
 -- | Returns all variables from a Stm. The result does not contains duplicates.
 vars :: Stm -> [Varname]

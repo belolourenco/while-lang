@@ -25,3 +25,7 @@ mkOr a b = BorSA a b
 
 mkBigAnd :: [Expr] -> Expr
 mkBigAnd = foldr mkAnd BtrueSA
+
+mkNeg :: Expr -> Expr
+mkNeg (BnegSA e) = e
+mkNeg e          = BnegSA e

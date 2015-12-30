@@ -40,6 +40,10 @@ vc "pcnf" = PCNF
 vc "pcnfplus" = PCNFPlus
 vc "gcnf" = GCNF
 vc "gcnfplus" = GCNFPlus
+vc "plin" = PLin
+vc "plinplus" = PLinPlus
+vc "glin" = GLin
+vc "glinplus" = GLinPlus
 
 vcgen :: IO ()
 vcgen = do 

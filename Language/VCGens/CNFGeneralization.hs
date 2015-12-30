@@ -5,7 +5,7 @@ import Language.WhileSA.Types
 import Language.VCGens.Base
 
 pcnf :: (Expr, Expr, Expr,StmSA) -> (Expr, Expr, SetExpr)
-pcnf (pi,psi,gamma, SskipSA)        = (BtrueSA, BtrueSA, [])
+pcnf (pi,psi,gamma, SskipSA)       = (BtrueSA, BtrueSA, [])
 pcnf (pi,psi,gamma, SassSA x e)    = (mkImpl pi (BeqSA (VariableSA x) e), BtrueSA, [])
 pcnf (pi,psi,gamma, SassumeSA e)   = (BtrueSA, mkImpl pi e, [])
 pcnf (pi,psi,gamma, ScompSA s1 s2) = (mkAnd psi1 psi2, mkAnd gamma1 gamma2, v1++v2)

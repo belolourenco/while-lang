@@ -2,7 +2,6 @@ module Language.VCGens.FrontEnd where
 
 import Language.Logic.Types
 import Language.WhileSA.Types
-import Language.VCGens.Base
 import Language.VCGens.SPGeneralization
 import Language.VCGens.CNFGeneralization
 import Language.VCGens.LinGeneralization

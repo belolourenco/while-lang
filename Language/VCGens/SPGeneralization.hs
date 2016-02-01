@@ -2,7 +2,6 @@ module Language.VCGens.SPGeneralization where
 
 import Language.Logic.Types
 import Language.WhileSA.Types
-import Language.VCGens.Base
 
 psp :: (Expr, Expr, StmSA) -> (Expr, Expr, SetExpr)
 psp (phi,psi, SskipSA) = (BtrueSA, BtrueSA, [])

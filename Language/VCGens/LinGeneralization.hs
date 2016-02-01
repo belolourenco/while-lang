@@ -2,7 +2,6 @@ module Language.VCGens.LinGeneralization where
 
 import Language.Logic.Types
 import Language.WhileSA.Types
-import Language.VCGens.Base
 
 plin :: StmSA -> (Expr, Expr, Expr)
 plin SskipSA         = (BtrueSA, BtrueSA, BtrueSA)

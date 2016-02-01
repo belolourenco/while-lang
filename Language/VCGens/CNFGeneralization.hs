@@ -2,7 +2,6 @@ module Language.VCGens.CNFGeneralization where
 
 import Language.Logic.Types
 import Language.WhileSA.Types
-import Language.VCGens.Base
 
 pcnf :: (Expr, Expr, Expr,StmSA) -> (Expr, Expr, SetExpr)
 pcnf (pi,psi,gamma, SskipSA)       = (BtrueSA, BtrueSA, [])

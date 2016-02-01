@@ -2,7 +2,6 @@ module Language.VCGens.Linear_Iter where
 
 import Language.Logic.Types
 import Language.WhileSA.Types
-import Language.VCGens.Base
 import Data.Maybe
 
 -- This is just a temporary solution. See omnigraffle diagram for a cleaner solution

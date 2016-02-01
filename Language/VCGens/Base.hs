@@ -21,6 +21,8 @@ mkOr BfalseSA b = b
 mkOr a BfalseSA = a
 mkOr BtrueSA b = BtrueSA
 mkOr a BtrueSA = BtrueSA
+mkOr a@(BnegSA x) b = if x == b then BtrueSA else BorSA a b
+mkOr a b@(BnegSA x) = if a == x then BtrueSA else BorSA a b
 mkOr a b = BorSA a b
 
 mkBigAnd :: [Expr] -> Expr

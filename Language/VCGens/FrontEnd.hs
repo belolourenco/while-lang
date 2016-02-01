@@ -6,6 +6,7 @@ import Language.VCGens.Base
 import Language.VCGens.SPGeneralization
 import Language.VCGens.CNFGeneralization
 import Language.VCGens.LinGeneralization
+import Language.VCGens.Linear_Iter
 
 data VCGen = PSP
            | PSPPlus
@@ -39,3 +40,7 @@ vcs s GLin     = let (psi,gamma,v) = glin s
                  in [mkImpl psi v]
 vcs s GLinPlus = let (psi,gamma,v) = glinplus s 
                  in [mkImpl psi v]
+
+-- This is just a temporary solution. See omnigraffle diagram for a cleaner solution
+vcs_iter :: StmSA -> SetExpr
+vcs_iter s = let (psi, gamma, t) = lin_iter s in (t ++ [gamma] ++ [psi])

@@ -52,3 +52,12 @@ vcgen = do
     case smt of
         (Left error) -> putStrLn error
         (Right smt') -> putStrLn.render.vcat.(punctuate (text "\n - ")).(map pretty) $ vcs smt' (vc a)
+
+-- This is just a temporary solution. See omnigraffle diagram to make a general solution.
+vcgen_iter :: IO ()
+vcgen_iter = do 
+    (file:_) <- getArgs
+    smt <- transFileSAFor file
+    case smt of
+        (Left error) -> putStrLn error
+        (Right smt') -> putStrLn.render.vcat.(punctuate (text "\n - ")).(map pretty) $ vcs_iter smt'

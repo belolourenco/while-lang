@@ -40,7 +40,11 @@ translation_to_SAHavoc = do
     (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
 
 pretty_list_vcs :: SetExpr -> Doc
-pretty_list_vcs = vcat.(punctuate (text "\n - ")).(map pretty)
+pretty_list_vcs s = vcat $ aux 0 $ map pretty s
+  where
+    aux :: Int -> [Doc] -> [Doc]
+    aux x []    = []
+    aux x (h:t) = (text "\n" <+> int x <+> text "-" <+> h):(aux (x+1) t)
 
 vcgen :: IO ()
 vcgen = do 

@@ -36,3 +36,7 @@ VCGen = psp       : Strongest Postcondition with PARTIAL contexts (assert NOT in
       | plinplus  : Linear with PARTIAL contexts                  (assert in context)
       | glin      : Linear with GLOBAL contexts                   (assert NOT in context
       | glinplus  : Linear with GLOBAL contexts                   (assert in context)
+
+
+TOOL:
+  $ while-lang-vcgen -h

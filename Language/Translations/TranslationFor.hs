@@ -3,13 +3,11 @@ module Language.Translations.TranslationFor where
 import Control.Monad.State
 
 import Language.While.Utils.Utils
-import Language.While.Parser
 import Language.While.Types
 import Language.WhileSA.Types
 import Language.Translations.Base
 
 -- * Translation for SA-For language
-
 tsaAexp :: Aexp -> State VersionList AexpSA
 tsaAexp (Numeral i) = return $ NumeralSA i
 tsaAexp (Variable n) = getVar n >>= \x -> return $ VariableSA x
@@ -120,9 +118,6 @@ tsa (SwhileInv b inv s) = do
                                      >>= \ns' -> return $ ((n, new $ getVarVerAux n vl),(n,v')):ns'
 --tsa (Stry Stm Stm
 
-transFileSAFor :: FilePath -> IO (Either String StmSA)
-transFileSAFor path = do
-  p <- loadFile path
-  case p of
-    Left e -> return.Left $ e
-    Right stm -> return.Right $ evalState (tsa stm) (initV $ vars stm)
+-- * Main function. Transforms a Stm into SA-for language (StmSA)
+forLoopTrans :: Stm -> StmSA
+forLoopTrans s = evalState (tsa s) (initV $ vars s)

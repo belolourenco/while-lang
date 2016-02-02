@@ -3,14 +3,12 @@ module Language.Translations.TranslationHavoc where
 import Control.Monad.State
 
 import Language.While.Utils.Utils
-import Language.While.Parser
 import Language.While.Types
 import Language.WhileSA.Types
 import Language.Translations.Base
 import Language.Translations.TranslationFor
 
 -- * Translation for SA-LoopFree language
-
 tsaLF :: Stm -> State VersionList StmSA
 tsaLF (Scomp s1 s2) = tsaLF s1 >>= \s1' -> tsaLF s2
                                >>= \s2' -> return $ ScompSA s1' s2'
@@ -49,9 +47,6 @@ tsaLF (SwhileInv b inv s) = do
 tsaLF s = tsa s
 --tsa (Stry Stm Stm
 
-transFileSALF :: FilePath -> IO (Either String StmSA)
-transFileSALF path = do
-  p <- loadFile path
-  case p of
-    Left e -> return.Left $ e
-    Right stm -> return.Right $ evalState (tsaLF stm) (initV $ vars stm)
+-- * Main function. Transforms a Stm into SA-LoopFree language (StmSA)
+havocTrans :: Stm -> StmSA
+havocTrans s = evalState (tsaLF s) (initV $ vars s)

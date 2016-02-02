@@ -1,4 +1,4 @@
-module Language.LoopTreatment.LoopUnroll where
+module Language.LoopTreatement.LoopUnroll where
 
 import Language.While.Types
 

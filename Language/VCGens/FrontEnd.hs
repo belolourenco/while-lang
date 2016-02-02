@@ -19,6 +19,7 @@ data VCGen = PSP
            | PLinPlus
            | GLin
            | GLinPlus
+           deriving Show
 
 vcs :: StmSA -> VCGen -> SetExpr
 vcs s PSP      = let (phi,psi,v) = psp (BtrueSA,BtrueSA,s) in v

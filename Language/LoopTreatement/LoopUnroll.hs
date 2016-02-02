@@ -3,6 +3,7 @@ module Language.LoopTreatement.LoopUnroll where
 import Language.While.Types
 
 data UnwindAnnotation = AssumeAnn | AssertAnn
+     deriving Show
 
 loop_unroll :: UnwindAnnotation -> Integer -> Stm -> Stm
 loop_unroll a _ s@(Sass v x)      = s

@@ -125,3 +125,14 @@ executable unwind
                        indents >= 0.3 && < 0.4,
                        pretty >= 1.1 && < 1.2,
                        mtl >= 2.2 && < 2.3
+
+executable while-lang-vcgen
+  main-is: Language/Main.hs
+
+  ghc-options: -main-is main
+  
+  build-depends:       base >= 4.5 && < 5,
+                       parsec >= 3.1 && < 4,
+                       indents >= 0.3 && < 0.4,
+                       pretty >= 1.1 && < 1.2,
+                       mtl >= 2.2 && < 2.3

@@ -12,8 +12,8 @@ import Language.While.PrettyPrinter
 
 instance Pretty VarnameSA where
   pretty (n, v) = pretty n 
-                  <> text "#" 
-                  <> (hcat $ punctuate (text "#") (map (text.show) v))
+                  <> text "_" 
+                  <> (hcat $ punctuate (text "_") (map (text.show) v))
 
 instance Pretty Rnm where
   pretty r = text "[" <> (hcat $ punctuate (text ",") (map aux r)) <> text "]"

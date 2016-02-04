@@ -5,6 +5,8 @@ import Text.PrettyPrint
 import Control.Monad.State
 import System.Exit
 
+import Language.Why3.PP
+
 import Language.Options
 import Language.While.Types
 import Language.While.Parser
@@ -16,6 +18,7 @@ import Language.Translations.TranslationFor
 import Language.Translations.TranslationHavoc
 import Language.VCGens.FrontEnd
 import Language.Logic.Types
+import Language.Logic.Why3Encoder
 import Language.LoopTreatement.LoopUnroll
 
 parse_while_lang :: IO ()
@@ -39,20 +42,13 @@ translation_to_SAHavoc = do
     (Left error) -> putStrLn error
     (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
 
-pretty_list_vcs :: SetExpr -> Doc
-pretty_list_vcs s = vcat $ aux 0 $ map pretty s
-  where
-    aux :: Int -> [Doc] -> [Doc]
-    aux x []    = []
-    aux x (h:t) = (text "\n" <+> int x <+> text "-" <+> h):(aux (x+1) t)
-
 vcgen :: IO ()
 vcgen = do 
   (file:a:_) <- getArgs
   content <- loadFile file
   case content of
     (Left error) -> putStrLn error
-    (Right stm) -> putStrLn.render.pretty_list_vcs $ vcs (havocTrans stm) (vc a)
+    (Right stm) -> pretty_list_vcs $ vcs (havocTrans stm) (vc a)
 
 -- This is just a temporary solution. See omnigraffle diagram to make a general solution.
 vcgen_iter :: IO ()
@@ -61,7 +57,7 @@ vcgen_iter = do
   content <- loadFile file
   case content of
     (Left error) -> putStrLn error
-    (Right stm) -> putStrLn.render.pretty_list_vcs.vcs_iter $ forLoopTrans stm
+    (Right stm) -> pretty_list_vcs.vcs_iter $ forLoopTrans stm
 
 unwind :: IO()
 unwind = do
@@ -70,6 +66,18 @@ unwind = do
   case content of
     (Left error) -> putStrLn error
     (Right stm) -> putStrLn.render.pretty $ loop_unroll (ann annotation) (read bound) stm
+
+
+pretty_list_vcs :: SetExpr -> IO ()
+pretty_list_vcs s = putStrLn.render.vcat $ aux 0 $ map pretty s
+  where
+    aux :: Int -> [Doc] -> [Doc]
+    aux x []    = []
+    aux x (h:t) = (text "\n" <+> int x <+> text "-" <+> h):(aux (x+1) t)
+
+output :: Bool -> SetExpr -> IO ()
+output True s  = pretty_list_vcs s
+output False s = putStrLn.render $ ppTh (setExpr2why3theory s)
 
 main :: IO a
 main = 
@@ -83,21 +91,21 @@ main =
                             (Right stm) -> translation stm o
   where
     translation :: Stm -> Opts -> IO a
-    translation stm o@(Opts _ v (Just a) (Just b) True _ _ _)
+    translation stm o@(Opts _ v (Just a) (Just b) True _ _ _ pp)
       = let stm_unnwound   = loop_unroll a b stm
             stm_translated = havocTrans stm_unnwound
             vcs_result     = vcs stm_translated v
-        in (putStrLn.render.pretty_list_vcs $ vcs_result) >> exitSuccess
-    translation stm o@(Opts _ v _ _ True _ _ _)
+        in (output pp vcs_result) >> exitSuccess
+    translation stm o@(Opts _ v _ _ True _ _ _ pp)
       = putStrLn "Make sure you selected a bound and an unwinding annotation"
           >> exitFailure
-    translation stm o@(Opts _ v Nothing _ _ True _ _) 
+    translation stm o@(Opts _ v Nothing _ _ True _ _ pp) 
       = let stm_translated = havocTrans stm
             vcs_result     = vcs stm_translated v
-        in (putStrLn.render.pretty_list_vcs $ vcs_result) >> exitSuccess
-    translation stm o@(Opts _ v Nothing _ _ _ True _) 
+        in (output pp vcs_result) >> exitSuccess
+    translation stm o@(Opts _ v Nothing _ _ _ True _ pp) 
       = let stm_translated = forLoopTrans stm
             vcs_result     = vcs_iter stm_translated
-        in (putStrLn.render.pretty_list_vcs $ vcs_result) >> exitSuccess
-    translation stm o@(Opts _ v Nothing _ _ _ _ True)
+        in (output pp vcs_result) >> exitSuccess
+    translation stm o@(Opts _ v Nothing _ _ _ _ True pp)
       = putStrLn "NOT IMPLEMENTED YET!!!!\n" >> exitFailure

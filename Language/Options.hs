@@ -17,9 +17,10 @@ data Opts = Opts
   , optHavoc   :: Bool
   , optForDV   :: Bool
   , optForBV   :: Bool
+  , optPP      :: Bool
   } deriving Show
 
-optsInit = Opts "" PSP Nothing Nothing False False False False
+optsInit = Opts "" PSP Nothing Nothing False False False False False
 
 options :: [OptDescr (Opts -> IO Opts)]
 options =
@@ -29,6 +30,9 @@ options =
      , Option ['h'] ["help"]
          (NoArg showHelp)
          "show help"
+     , Option ['p'] ["pp"]
+         (NoArg (\o -> return $ o {optPP = True}))
+         "pretty-print VCs only"
      , Option [] ["unwind_loops"]
          (NoArg (\o -> return $ o {optLoopUnw = True}))
          "unwind loops (requires 'unwind_bound' and 'unwind_annotation')"

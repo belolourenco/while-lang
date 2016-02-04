@@ -26,7 +26,9 @@ useImportDiv = Use (Just Import) (p "int.ComputerDivision") Nothing
 
 setExpr2why3theory :: SetExpr -> Theory
 setExpr2why3theory s = Theory (p "WhileLangVCs") 
-                              (useImportInt:useImportDiv:(setExpr2why3decl s))
+                              (useImportInt
+                                :useImportDiv
+                                :(setExpr2why3decl s))
 
 setExpr2why3decl :: SetExpr -> [Decl]
 setExpr2why3decl = (aux 0).setExpr2why3expr
@@ -36,7 +38,7 @@ setExpr2why3decl = (aux 0).setExpr2why3expr
                         :(aux (i+1) t)
 
 saV2str :: VarnameSA -> String
-saV2str = show.render.pretty
+saV2str = render.pretty
 
 setExpr2why3expr :: SetExpr -> [Expr]
 setExpr2why3expr s = map aux s

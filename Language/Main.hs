@@ -75,9 +75,10 @@ pretty_list_vcs s = putStrLn.render.vcat $ aux 0 $ map pretty s
     aux x []    = []
     aux x (h:t) = (text "\n" <+> int x <+> text "-" <+> h):(aux (x+1) t)
 
-output :: Bool -> SetExpr -> IO ()
-output True s  = pretty_list_vcs s
-output False s = putStrLn.render $ ppTh (setExpr2why3theory s)
+output :: Bool -> SetExpr -> String -> IO ()
+output True s  f = pretty_list_vcs s
+output False s f = writeFile why3file $ show $ ppTh (setExpr2why3theory s)
+  where why3file = (takeWhile (/='.') f) ++ ".why"
 
 main :: IO a
 main = 
@@ -91,21 +92,21 @@ main =
                             (Right stm) -> translation stm o
   where
     translation :: Stm -> Opts -> IO a
-    translation stm o@(Opts _ v (Just a) (Just b) True _ _ _ pp)
+    translation stm o@(Opts f v (Just a) (Just b) True _ _ _ pp)
       = let stm_unnwound   = loop_unroll a b stm
             stm_translated = havocTrans stm_unnwound
             vcs_result     = vcs stm_translated v
-        in (output pp vcs_result) >> exitSuccess
+        in (output pp vcs_result f) >> exitSuccess
     translation stm o@(Opts _ v _ _ True _ _ _ pp)
       = putStrLn "Make sure you selected a bound and an unwinding annotation"
           >> exitFailure
-    translation stm o@(Opts _ v Nothing _ _ True _ _ pp) 
+    translation stm o@(Opts f v Nothing _ _ True _ _ pp) 
       = let stm_translated = havocTrans stm
             vcs_result     = vcs stm_translated v
-        in (output pp vcs_result) >> exitSuccess
-    translation stm o@(Opts _ v Nothing _ _ _ True _ pp) 
+        in (output pp vcs_result f) >> exitSuccess
+    translation stm o@(Opts f v Nothing _ _ _ True _ pp) 
       = let stm_translated = forLoopTrans stm
             vcs_result     = vcs_iter stm_translated
-        in (output pp vcs_result) >> exitSuccess
-    translation stm o@(Opts _ v Nothing _ _ _ _ True pp)
+        in (output pp vcs_result f) >> exitSuccess
+    translation stm o@(Opts f v Nothing _ _ _ _ True pp)
       = putStrLn "NOT IMPLEMENTED YET!!!!\n" >> exitFailure

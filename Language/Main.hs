@@ -4,6 +4,7 @@ import System.Environment
 import Text.PrettyPrint
 import Control.Monad.State
 import System.Exit
+import  System.Process
 
 import Language.Why3.PP
 
@@ -77,7 +78,8 @@ pretty_list_vcs s = putStrLn.render.vcat $ aux 0 $ map pretty s
 
 output :: Bool -> SetExpr -> String -> IO ()
 output True s  f = pretty_list_vcs s
-output False s f = writeFile why3file $ show $ ppTh (setExpr2why3theory s)
+output False s f = (writeFile why3file $ show $ ppTh (setExpr2why3theory s))
+                    >> readProcess "why3" ["ide",why3file] [] >>= putStrLn
   where why3file = (takeWhile (/='.') f) ++ ".why"
 
 main :: IO a

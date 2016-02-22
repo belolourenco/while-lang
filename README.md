@@ -78,7 +78,8 @@ VCGens
 
 The following VCGens are available
 
-VCGen = psp       : Strongest Postcondition with PARTIAL contexts (assert NOT in context)
+VCGen = 
+        psp       : Strongest Postcondition with PARTIAL contexts (assert NOT in context)
 
       | pspplus   : Strongest Postcondition with PARTIAL contexts (assert in context)
 
@@ -116,6 +117,7 @@ SA translation to SA language based on Boogie/Havoc: $ transSAHavoc file_name.wl
 Loop UNWIND: $ unwind file.wl annotation bound
 
 annotation  = assume | assert
+
 bound       = int
 
 VCGENs: $ vcgen file.wl VCGen

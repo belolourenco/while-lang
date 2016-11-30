@@ -42,6 +42,7 @@ vars = nub.aux
     aux (Swhile b s)       = (varsBexp b) ++ (aux s)
     aux (SwhileInv b i s)  = (varsBexp b) ++ (varsBexp i) ++ (aux s)
     aux (Stry s1 s2)       = (aux s1) ++ (aux s2)
+    aux Sthrow             = []
 
 -- | Returns all variables assigned in the given Stm
 asgn :: Stm -> [Varname]
@@ -57,6 +58,7 @@ asgn = nub.aux
     aux (Swhile b s)      = (aux s)
     aux (SwhileInv b i s) = (aux s)
     aux (Stry s1 s2)      = (aux s1) ++ (aux s2)
+    aux Sthrow            = []
 
 rnmToAssign :: Rnm -> StmSA
 rnmToAssign [] = SskipSA

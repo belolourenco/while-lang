@@ -80,3 +80,4 @@ instance Pretty StmSA where
                           (nest 2 $ pretty s1) $$
                           (text "catch") $$
                           (nest 2 $ pretty s2)
+  pretty SthrowSA         = text "throw"

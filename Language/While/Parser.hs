@@ -203,6 +203,7 @@ stmTryCatch = do
   s1 <- program
   symbol "catch"
   s2 <- program
+  symbol "endc"
   return $ Stry s1 s2
 
 identifier = P.identifier whileLexer

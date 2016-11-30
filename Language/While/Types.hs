@@ -48,4 +48,5 @@ data Stm
   | Swhile Bexp Stm
   | SwhileInv Bexp Bexp Stm
   | Stry Stm Stm
+  | Sthrow
   deriving (Show, Eq)

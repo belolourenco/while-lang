@@ -58,6 +58,7 @@ statement
   =   try stmAssignment
   <|> try stmTryCatch
   <|> try stmSkip
+  <|> try stmThrow
   <|> try stmAssume
   <|> try stmAssert
   <|> try stmIf
@@ -136,6 +137,9 @@ stmAssignment = do
 
 -- | Skip statement.
 stmSkip = symbol "skip" >> return Sskip
+
+-- | Skip statement.
+stmThrow = symbol "throw" >> return Sthrow
 
 -- | Assume statement.
 stmAssume = do

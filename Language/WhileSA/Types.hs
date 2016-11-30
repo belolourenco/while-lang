@@ -47,4 +47,5 @@ data StmSA
   | SforSA Rnm BexpSA Rnm StmSA
   | SforInvSA Rnm BexpSA Rnm BexpSA StmSA
   | StrySA StmSA StmSA
+  | SthrowA
   deriving (Show, Eq)

@@ -22,6 +22,6 @@ try
     end
   end
 catch
-  z := 2;
+  z := k + 2;
   k := 4
 endc

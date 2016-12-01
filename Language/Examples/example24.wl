@@ -8,5 +8,5 @@ try
     throw
   end
 catch
-  z := 2
+  z :=  x + w + y
 endc

@@ -23,11 +23,11 @@ data VCGen = PSP
            deriving Show
         
 vcs :: StmSA -> VCGen -> SetExpr
-vcs s PSP      = let (_,_,_,v) = sp Part AsrtNot (BtrueSA,BtrueSA,s) in v
-vcs s PSPPlus  = let (_,_,_,v) = sp Part AsrtIn (BtrueSA,BtrueSA,s) in v
-vcs s GSP      = let (phi,_,_,v) = sp Glob AsrtNot (BtrueSA,BtrueSA,s) 
+vcs s PSP      = let (_,_,_,_,v) = sp Part AsrtNot (BtrueSA,BtrueSA,s) in v
+vcs s PSPPlus  = let (_,_,_,_,v) = sp Part AsrtIn (BtrueSA,BtrueSA,s) in v
+vcs s GSP      = let (phi,_,_,_,v) = sp Glob AsrtNot (BtrueSA,BtrueSA,s) 
                    in [mkImpl phi (mkBigAnd v)]
-vcs s GSPPlus  = let (phi,_,_,v) = sp Glob AsrtIn (BtrueSA,BtrueSA,s) 
+vcs s GSPPlus  = let (phi,_,_,_,v) = sp Glob AsrtIn (BtrueSA,BtrueSA,s) 
                    in [mkImpl phi (mkBigAnd v)]
 vcs s PCNF     = let (psi,gamma,v) = pcnf (BtrueSA,BtrueSA,BtrueSA,s) in v
 vcs s PCNFPlus = let (psi,gamma,v) = pcnfplus (BtrueSA,BtrueSA,BtrueSA,s) in v

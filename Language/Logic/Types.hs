@@ -11,6 +11,8 @@ mkAnd BtrueSA b = b
 mkAnd a BtrueSA = a
 mkAnd BfalseSA b = BfalseSA
 mkAnd a BfalseSA = BfalseSA
+mkAnd x@(BnegSA a) y@(BnegSA b)
+  = if a == b then x else BandSA x y
 mkAnd a b = BandSA a b
 
 mkImpl :: Expr -> Expr -> Expr

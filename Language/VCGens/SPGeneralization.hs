@@ -5,7 +5,8 @@ import Language.WhileSA.Types
 import Language.VCGens.Base
 
 -- SP Partial Context
-sp :: Context -> AsrtCtx -> (Expr, Expr, StmSA) -> (Expr, Expr, Expr, Expr, SetExpr)
+sp :: Context -> AsrtCtx -> (Expr, Expr, StmSA)
+                         -> (Expr, Expr, Expr, Expr, SetExpr)
 sp ctx asrt (phi,psi, SskipSA) = 
         (BtrueSA, BtrueSA, BfalseSA, BfalseSA, [])
 sp ctx asrt (phi,psi, SassSA x e) = 

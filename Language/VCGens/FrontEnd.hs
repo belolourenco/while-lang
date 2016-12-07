@@ -29,17 +29,17 @@ vcs s GSP      = let (phi,_,_,_,v) = sp Glob AsrtNot (BtrueSA,BtrueSA,s)
                    in [mkImpl phi (mkBigAnd v)]
 vcs s GSPPlus  = let (phi,_,_,_,v) = sp Glob AsrtIn (BtrueSA,BtrueSA,s) 
                    in [mkImpl phi (mkBigAnd v)]
-vcs s PCNF     = let (psi,gamma,v) = pcnf (BtrueSA,BtrueSA,BtrueSA,s) in v
-vcs s PCNFPlus = let (psi,gamma,v) = pcnfplus (BtrueSA,BtrueSA,BtrueSA,s) in v
-vcs s GCNF     = let (psi,gamma,v) = gcnf (BtrueSA,BtrueSA,BtrueSA,s) 
+vcs s PCNF     = let (_,_,_,_,v) = cnf Part AsrtNot (BtrueSA,BtrueSA,BtrueSA,s) in v
+vcs s PCNFPlus = let (_,_,_,_,v) = cnf Part AsrtIn (BtrueSA,BtrueSA,BtrueSA,s) in v
+vcs s GCNF     = let (psi,_,_,_,v) = cnf Glob AsrtNot (BtrueSA,BtrueSA,BtrueSA,s) 
                  in [mkImpl psi (mkBigAnd v)]
-vcs s GCNFPlus = let (psi,gamma,v) = gcnfplus (BtrueSA,BtrueSA,BtrueSA,s) 
+vcs s GCNFPlus = let (psi,_,_,_,v) = cnf Glob AsrtIn (BtrueSA,BtrueSA,BtrueSA,s) 
                  in [mkImpl psi (mkBigAnd v)]
-vcs s PLin     = let (psi,gamma,v) = plin s in [v]
-vcs s PLinPlus = let (psi,gamma,v) = plinplus s in [v]
-vcs s GLin     = let (psi,gamma,v) = glin s 
+vcs s PLin     = let (_,_,_,_,v) = lin Part AsrtNot s in [v]
+vcs s PLinPlus = let (_,_,_,_,v) = lin Part AsrtIn s in [v]
+vcs s GLin     = let (psi,_,_,_,v) = lin Glob AsrtNot s 
                  in [mkImpl psi v]
-vcs s GLinPlus = let (psi,gamma,v) = glinplus s 
+vcs s GLinPlus = let (psi,_,_,_,v) = lin Glob AsrtIn s 
                  in [mkImpl psi v]
 
 -- This is just a temporary solution. See omnigraffle diagram for a cleaner solution

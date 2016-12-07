@@ -19,6 +19,7 @@ mkImpl :: Expr -> Expr -> Expr
 mkImpl a BtrueSA = BtrueSA
 mkImpl BfalseSA b = BtrueSA
 mkImpl BtrueSA b = b
+mkImpl a BfalseSA = BnegSA a
 mkImpl a b = BimplSA a b
 
 mkOr :: Expr -> Expr -> Expr

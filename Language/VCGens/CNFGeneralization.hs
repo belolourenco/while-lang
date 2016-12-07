@@ -2,51 +2,54 @@ module Language.VCGens.CNFGeneralization where
 
 import Language.Logic.Types
 import Language.WhileSA.Types
+import Language.VCGens.Base
 
-pcnf :: (Expr, Expr, Expr,StmSA) -> (Expr, Expr, SetExpr)
-pcnf (pi,psi,gamma, SskipSA)       = (BtrueSA, BtrueSA, [])
-pcnf (pi,psi,gamma, SassSA x e)    = (mkImpl pi (BeqSA (VariableSA x) e), BtrueSA, [])
-pcnf (pi,psi,gamma, SassumeSA e)   = (BtrueSA, mkImpl pi e, [])
-pcnf (pi,psi,gamma, ScompSA s1 s2) = (mkAnd psi1 psi2, mkAnd gamma1 gamma2, v1++v2)
-  where (psi1,gamma1,v1) = pcnf (pi,psi,gamma,s1)
-        (psi2,gamma2,v2) = pcnf (pi,mkAnd psi psi1, mkAnd gamma gamma1, s2)
-pcnf (pi,psi,gamma, SifSA b st sf) = (mkAnd psit psif, mkAnd gammat gammaf, vt++vf)
-  where (psit,gammat,vt) = pcnf (mkAnd pi b, psi,gamma,st)
-        (psif,gammaf,vf) = pcnf (mkAnd pi (BnegSA b), psi,gamma,sf)
-pcnf (pi,psi,gamma, SassertSA e)   = (BtrueSA, BtrueSA, [mkImpl (mkAnd psi gamma) (mkImpl pi e)])
-
-pcnfplus :: (Expr, Expr, Expr,StmSA) -> (Expr, Expr, SetExpr)
-pcnfplus (pi,psi,gamma, SskipSA)        = (BtrueSA, BtrueSA, [])
-pcnfplus (pi,psi,gamma, SassSA x e)    = (mkImpl pi (BeqSA (VariableSA x) e), BtrueSA, [])
-pcnfplus (pi,psi,gamma, SassumeSA e)   = (BtrueSA, mkImpl pi e, [])
-pcnfplus (pi,psi,gamma, ScompSA s1 s2) = (mkAnd psi1 psi2, mkAnd gamma1 gamma2, v1++v2)
-  where (psi1,gamma1,v1) = pcnfplus (pi,psi,gamma,s1)
-        (psi2,gamma2,v2) = pcnfplus (pi,mkAnd psi psi1, mkAnd gamma gamma1, s2)
-pcnfplus (pi,psi,gamma, SifSA b st sf) = (mkAnd psit psif, mkAnd gammat gammaf, vt++vf)
-  where (psit,gammat,vt) = pcnfplus (mkAnd pi b, psi,gamma,st)
-        (psif,gammaf,vf) = pcnfplus (mkAnd pi (BnegSA b), psi,gamma,sf)
-pcnfplus (pi,psi,gamma, SassertSA e)   = (BtrueSA, mkImpl pi e, [mkImpl (mkAnd psi gamma) (mkImpl pi e)])
-
-gcnf :: (Expr, Expr, Expr,StmSA) -> (Expr, Expr, SetExpr)
-gcnf (pi,psi,gamma, SskipSA)        = (BtrueSA, BtrueSA, [])
-gcnf (pi,psi,gamma, SassSA x e)    = (mkImpl pi (BeqSA (VariableSA x) e), BtrueSA, [])
-gcnf (pi,psi,gamma, SassumeSA e)   = (BtrueSA, mkImpl pi e, [])
-gcnf (pi,psi,gamma, ScompSA s1 s2) = (mkAnd psi1 psi2, mkAnd gamma1 gamma2, v1++v2)
-  where (psi1,gamma1,v1) = gcnf (pi,psi,gamma,s1)
-        (psi2,gamma2,v2) = gcnf (pi,mkAnd psi psi1, mkAnd gamma gamma1, s2)
-gcnf (pi,psi,gamma, SifSA b st sf) = (mkAnd psit psif, mkAnd gammat gammaf, vt++vf)
-  where (psit,gammat,vt) = gcnf (mkAnd pi b, psi,gamma,st)
-        (psif,gammaf,vf) = gcnf (mkAnd pi (BnegSA b), psi,gamma,sf)
-gcnf (pi,psi,gamma, SassertSA e)   = (BtrueSA, BtrueSA, [mkImpl gamma (mkImpl pi e)])
-
-gcnfplus :: (Expr, Expr, Expr,StmSA) -> (Expr, Expr, SetExpr)
-gcnfplus (pi,psi,gamma, SskipSA)        = (BtrueSA, BtrueSA, [])
-gcnfplus (pi,psi,gamma, SassSA x e)    = (mkImpl pi (BeqSA (VariableSA x) e), BtrueSA, [])
-gcnfplus (pi,psi,gamma, SassumeSA e)   = (BtrueSA, mkImpl pi e, [])
-gcnfplus (pi,psi,gamma, ScompSA s1 s2) = (mkAnd psi1 psi2, mkAnd gamma1 gamma2, v1++v2)
-  where (psi1,gamma1,v1) = gcnfplus (pi,psi,gamma,s1)
-        (psi2,gamma2,v2) = gcnfplus (pi,mkAnd psi psi1, mkAnd gamma gamma1, s2)
-gcnfplus (pi,psi,gamma, SifSA b st sf) = (mkAnd psit psif, mkAnd gammat gammaf, vt++vf)
-  where (psit,gammat,vt) = gcnfplus (mkAnd pi b, psi,gamma,st)
-        (psif,gammaf,vf) = gcnfplus (mkAnd pi (BnegSA b), psi,gamma,sf)
-gcnfplus (pi,psi,gamma, SassertSA e)   = (BtrueSA, mkImpl pi e, [mkImpl gamma (mkImpl pi e)])
+cnf :: Context -> AsrtCtx -> (Expr, Expr, Expr,StmSA)
+                           -> (Expr, Expr, Expr, Expr, SetExpr)
+cnf ctx asrt (pi,phi,gamma, SskipSA) =
+  (BtrueSA, BtrueSA, BfalseSA, BfalseSA, [])
+cnf ctx asrt (pi,phi,gamma, SassSA x e) =
+  (mkImpl pi (BeqSA (VariableSA x) e), BtrueSA,BfalseSA, BfalseSA, [])
+cnf ctx asrt (pi,phi,gamma, SassumeSA e) =
+  (BtrueSA, mkImpl pi e, BfalseSA, BfalseSA, [])
+cnf ctx asrt (pi,phi,gamma, ScompSA s1 s2) =
+  (mkAnd phi1 phi2
+  , mkAnd gamma1 gamma2
+  , mkOr omg1 (mkAnd phi1   omg2)
+  , mkOr mu1  (mkAnd gamma1 mu2)
+  , v1++v2)
+  where (phi1,gamma1,omg1,mu1,v1) =
+          cnf ctx asrt (pi,phi,gamma,s1)
+        (phi2,gamma2,omg2,mu2,v2) =
+          cnf ctx asrt (pi,mkAnd phi phi1, mkAnd gamma gamma1, s2)
+cnf ctx asrt (pi,phi,gamma, SifSA b st sf) =
+  (mkAnd phi1 phi2
+  , mkAnd gamma1 gamma2
+  , mkAnd omg1 omg2
+  , mkAnd mu1 mu2
+  , v1++v2)
+  where (phi1,gamma1,omg1,mu1,v1) =
+          cnf ctx asrt (mkAnd pi b         , phi,gamma,st)
+        (phi2,gamma2,omg2,mu2,v2) =
+          cnf ctx asrt (mkAnd pi (BnegSA b), phi,gamma,sf)
+cnf ctx asrt (pi,phi,gamma, StrySA s1 s2) =
+  (mkOr phi1   (mkAnd omg1 phi2)
+  ,mkOr gamma1 (mkAnd mu1 gamma2)
+  ,mkAnd omg1 omg2
+  ,mkAnd mu1 mu2
+  ,v1++v2)
+  where
+    (phi1,gamma1,omg1,mu1,v1) =
+      cnf ctx asrt (pi,phi,gamma,s1)
+    (phi2,gamma2,omg2,mu2,v2) =
+      cnf ctx asrt (pi,mkAnd phi omg1,mkAnd gamma mu1,s2)
+cnf ctx asrt (pi,phi,psi, SthrowSA) =
+  (BfalseSA, BfalseSA, BtrueSA, BtrueSA, [])
+cnf Part AsrtNot (pi,phi,gamma, SassertSA e) =
+  (BtrueSA, BtrueSA, BfalseSA, BfalseSA, [mkImpl (mkAnd phi gamma) (mkImpl pi e)])
+cnf Part AsrtIn (pi,phi,gamma, SassertSA e) =
+  (BtrueSA, mkImpl pi e, BfalseSA, BfalseSA, [mkImpl (mkAnd phi gamma) (mkImpl pi e)])
+cnf Glob AsrtNot (pi,phi,gamma, SassertSA e) =
+  (BtrueSA, BtrueSA, BfalseSA, BfalseSA, [mkImpl gamma (mkImpl pi e)])
+cnf Glob AsrtIn  (pi,phi,gamma, SassertSA e) =
+  (BtrueSA, mkImpl pi e, BfalseSA, BfalseSA, [mkImpl gamma (mkImpl pi e)])

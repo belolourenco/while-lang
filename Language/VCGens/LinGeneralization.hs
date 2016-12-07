@@ -2,71 +2,62 @@ module Language.VCGens.LinGeneralization where
 
 import Language.Logic.Types
 import Language.WhileSA.Types
+import Language.VCGens.Base
 
-plin :: StmSA -> (Expr, Expr, Expr)
-plin SskipSA         = (BtrueSA, BtrueSA, BtrueSA)
-plin (SassSA x e)    = (BeqSA (VariableSA x) e, BtrueSA, BtrueSA)
-plin (SassumeSA e)   = (BtrueSA, e, BtrueSA)
-plin (ScompSA s1 s2) = (mkAnd psi1 psi2
-                       , mkAnd gamma1 gamma2
-                       , mkAnd omega1 (mkImpl (mkAnd psi1 gamma1) omega2))
-  where (psi1,gamma1,omega1) = plin s1
-        (psi2,gamma2,omega2) = plin s2
-plin (SifSA b st sf) = (mkOr (mkAnd b psit) (mkAnd (mkNeg b) psif)
-                       ,mkOr (mkAnd b gammat) (mkAnd (mkNeg b) gammaf)
-                       ,mkAnd (mkImpl b omegat) (mkImpl (mkNeg b) omegaf)
-                       )
-  where (psit,gammat,omegat) = plin st
-        (psif,gammaf,omegaf) = plin sf
-plin (SassertSA e)   = (BtrueSA, BtrueSA, e)
-
-plinplus :: StmSA -> (Expr, Expr, Expr)
-plinplus SskipSA         = (BtrueSA, BtrueSA, BtrueSA)
-plinplus (SassSA x e)    = (BeqSA (VariableSA x) e, BtrueSA, BtrueSA)
-plinplus (SassumeSA e)   = (BtrueSA, e, BtrueSA)
-plinplus (ScompSA s1 s2) = (mkAnd psi1 psi2
-                           , mkAnd gamma1 gamma2
-                           , mkAnd omega1 (mkImpl (mkAnd psi1 gamma1) omega2))
-  where (psi1,gamma1,omega1) = plinplus s1
-        (psi2,gamma2,omega2) = plinplus s2
-plinplus (SifSA b st sf) = (mkOr (mkAnd b psit) (mkAnd (mkNeg b) psif)
-                           ,mkOr (mkAnd b gammat) (mkAnd (mkNeg b) gammaf)
-                           ,mkAnd (mkImpl b omegat) (mkImpl (mkNeg b) omegaf)
-                           )
-  where (psit,gammat,omegat) = plinplus st
-        (psif,gammaf,omegaf) = plinplus sf
-plinplus (SassertSA e)   = (BtrueSA, e, e)
-
-glin :: StmSA -> (Expr, Expr, Expr)
-glin SskipSA         = (BtrueSA, BtrueSA, BtrueSA)
-glin (SassSA x e)    = (BeqSA (VariableSA x) e, BtrueSA, BtrueSA)
-glin (SassumeSA e)   = (BtrueSA, e, BtrueSA)
-glin (ScompSA s1 s2) = (mkAnd psi1 psi2
-                       , mkAnd gamma1 gamma2
-                       , mkAnd omega1 (mkImpl gamma1 omega2))
-  where (psi1,gamma1,omega1) = glin s1
-        (psi2,gamma2,omega2) = glin s2
-glin (SifSA b st sf) = (mkOr (mkAnd b psit) (mkAnd (mkNeg b) psif)
-                       ,mkOr (mkAnd b gammat) (mkAnd (mkNeg b) gammaf)
-                       ,mkAnd (mkImpl b omegat) (mkImpl (mkNeg b) omegaf)
-                       )
-  where (psit,gammat,omegat) = glin st
-        (psif,gammaf,omegaf) = glin sf
-glin (SassertSA e)   = (BtrueSA, BtrueSA, e)
-
-glinplus :: StmSA -> (Expr, Expr, Expr)
-glinplus SskipSA         = (BtrueSA, BtrueSA, BtrueSA)
-glinplus (SassSA x e)    = (BeqSA (VariableSA x) e, BtrueSA, BtrueSA)
-glinplus (SassumeSA e)   = (BtrueSA,e, BtrueSA)
-glinplus (ScompSA s1 s2) = (mkAnd psi1 psi2
-                           , mkAnd gamma1 gamma2
-                           , mkAnd omega1 (mkImpl gamma1 omega2))
-  where (psi1,gamma1,omega1) = glinplus s1
-        (psi2,gamma2,omega2) = glinplus s2
-glinplus (SifSA b st sf) = (mkOr (mkAnd b psit) (mkAnd (mkNeg b) psif)
-                           ,mkOr (mkAnd b gammat) (mkAnd (mkNeg b) gammaf)
-                           ,mkAnd (mkImpl b omegat) (mkImpl (mkNeg b) omegaf)
-                           )
-  where (psit,gammat,omegat) = glinplus st
-        (psif,gammaf,omegaf) = glinplus sf
-glinplus (SassertSA e)   = (BtrueSA, e, e)
+lin :: Context -> AsrtCtx -> StmSA -> (Expr, Expr, Expr, Expr, Expr)
+lin ctx asrt SskipSA         =
+  (BtrueSA, BtrueSA, BfalseSA, BfalseSA, BtrueSA)
+lin ctx asrt (SassSA x e)    =
+  (BeqSA (VariableSA x) e, BtrueSA, BfalseSA, BfalseSA, BtrueSA)
+lin ctx asrt (SassumeSA e)   =
+  (BtrueSA, e, BfalseSA, BfalseSA, BtrueSA)
+lin ctx asrt (SifSA b st sf) =
+  (mkOr (mkAnd b phi1) (mkAnd (mkNeg b) phi2)
+  ,mkOr (mkAnd b gamma1) (mkAnd (mkNeg b) gamma2)
+  ,mkOr (mkAnd b omg1) (mkAnd (mkNeg b) omg2)
+  ,mkOr (mkAnd b mu1) (mkAnd (mkNeg b) mu2)
+  ,mkAnd (mkImpl b delta1) (mkImpl (mkNeg b) delta2))
+  where
+    (phi1,gamma1,omg1,mu1,delta1) = lin ctx asrt st
+    (phi2,gamma2,omg2,mu2,delta2) = lin ctx asrt sf
+lin ctx asrt SthrowSA = (BfalseSA,BfalseSA,BtrueSA,BtrueSA,BtrueSA)
+lin Part asrt (StrySA s1 s2) = -- Partial Context
+  (mkOr phi1 (mkAnd omg1 phi2)
+  ,mkOr gamma1 (mkAnd mu1 gamma2)
+  ,mkAnd omg1 omg2
+  ,mkAnd mu1 mu2
+  ,mkAnd delta1 (mkImpl (mkAnd omg1 mu1) delta2))
+  where
+    (phi1,gamma1,omg1,mu1,delta1) = lin Part asrt s1
+    (phi2,gamma2,omg2,mu2,delta2) = lin Part asrt s2
+lin Glob asrt (StrySA s1 s2) = -- Global Context
+  (mkOr phi1 (mkAnd omg1 phi2)
+  ,mkOr gamma1 (mkAnd mu1 gamma2)
+  ,mkAnd omg1 omg2
+  ,mkAnd mu1 mu2
+  ,mkAnd delta1 (mkImpl mu1 delta2))
+  where
+    (phi1,gamma1,omg1,mu1,delta1) = lin Part asrt s1
+    (phi2,gamma2,omg2,mu2,delta2) = lin Part asrt s2    
+lin Part asrt (ScompSA s1 s2) = -- Partial Context
+  (mkAnd phi1 phi2
+  , mkAnd gamma1 gamma2
+  , mkOr omg1 (mkAnd phi1 omg2)
+  , mkOr mu1 (mkAnd gamma1 mu2)
+  , mkAnd delta1 (mkImpl (mkAnd phi1 gamma1) delta2))
+  where
+    (phi1,gamma1,omg1,mu1,delta1) = lin Part asrt s1
+    (phi2,gamma2,omg2,mu2,delta2) = lin Part asrt s2
+lin Glob asrt (ScompSA s1 s2) = -- Global Context
+  (mkAnd phi1 phi2
+  , mkAnd gamma1 gamma2
+  , mkOr omg1 (mkAnd phi1 omg2)
+  , mkOr mu1 (mkAnd gamma1 mu2)
+  , mkAnd delta1 (mkImpl gamma1 delta2))
+  where
+    (phi1,gamma1,omg1,mu1,delta1) = lin Glob asrt s1
+    (phi2,gamma2,omg2,mu2,delta2) = lin Glob asrt s2
+lin ctx AsrtNot (SassertSA e) = -- Assert not in context
+  (BtrueSA, BtrueSA, BfalseSA, BfalseSA, e) 
+lin ctx AsrtIn  (SassertSA e) = -- Assert in context
+  (BtrueSA, e, BfalseSA, BfalseSA, e)

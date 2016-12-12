@@ -15,13 +15,6 @@ mkAnd x@(BnegSA a) y@(BnegSA b)
   = if a == b then x else BandSA x y
 mkAnd a b = BandSA a b
 
-mkImpl :: Expr -> Expr -> Expr
-mkImpl a BtrueSA = BtrueSA
-mkImpl BfalseSA b = BtrueSA
-mkImpl BtrueSA b = b
-mkImpl a BfalseSA = BnegSA a
-mkImpl a b = BimplSA a b
-
 mkOr :: Expr -> Expr -> Expr
 mkOr BfalseSA b = b
 mkOr a BfalseSA = a
@@ -37,3 +30,10 @@ mkBigAnd = foldr mkAnd BtrueSA
 mkNeg :: Expr -> Expr
 mkNeg (BnegSA e) = e
 mkNeg e          = BnegSA e
+
+mkImpl :: Expr -> Expr -> Expr
+mkImpl a BtrueSA = BtrueSA
+mkImpl BfalseSA b = BtrueSA
+mkImpl BtrueSA b = b
+mkImpl a BfalseSA = mkNeg a
+mkImpl a b = BimplSA a b

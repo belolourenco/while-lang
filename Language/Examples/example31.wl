@@ -1,5 +1,5 @@
 try
-  assume x = 4
+  x := 4;
   throw
 catch
   assert y + x = 5

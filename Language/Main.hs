@@ -29,36 +29,6 @@ parse_while_lang = do
     (Left error) -> putStrLn error
     (Right smt)  -> putStrLn.render.pretty $ smt
 
-translation_to_SAFor :: IO ()
-translation_to_SAFor = do 
-  r <- getArgs >>= loadFile.head
-  case r of
-    (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ forLoopTrans smt
-
-translation_to_SAHavoc :: IO ()
-translation_to_SAHavoc = do 
-  r <- getArgs >>= loadFile.head
-  case r of
-    (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
-
-vcgen :: IO ()
-vcgen = do 
-  (file:a:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> pretty_list_vcs $ vcs (havocTrans stm) (vc a)
-
--- This is just a temporary solution. See omnigraffle diagram to make a general solution.
-vcgen_iter :: IO ()
-vcgen_iter = do
-  (file:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> pretty_list_vcs.vcs_iter $ forLoopTrans stm
 
 unwind :: IO()
 unwind = do
@@ -81,6 +51,48 @@ output True s  f = pretty_list_vcs s
 output False s f = (writeFile why3file $ show $ ppTh (setExpr2why3theory s))
                     >> readProcess "why3" ["ide",why3file] [] >>= putStrLn
   where why3file = (takeWhile (/='.') f) ++ ".why"
+
+
+translation_to_SAFor :: IO ()
+translation_to_SAFor = do 
+  r <- getArgs >>= loadFile.head
+  case r of
+    (Left error) -> putStrLn error
+    (Right smt)  -> putStrLn.render.pretty $ forLoopTrans smt
+
+translation_to_SAHavoc :: IO ()
+translation_to_SAHavoc = do 
+  r <- getArgs >>= loadFile.head
+  case r of
+    (Left error) -> putStrLn error
+    (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
+
+vcgen :: IO ()
+vcgen = do 
+  (file:a:_) <- getArgs
+  content <- loadFile file
+  case content of
+    (Left error) -> putStrLn error
+    (Right stm) -> let list_vcs = vcs (havocTrans stm) (vc a)
+                   in pretty_list_vcs $ list_vcs 
+
+vcgen_why3 :: IO ()
+vcgen_why3 = do 
+  (file:a:_) <- getArgs
+  content <- loadFile file
+  case content of
+    (Left error) -> putStrLn error
+    (Right stm) -> let list_vcs = vcs (havocTrans stm) (vc a)
+                   in output False list_vcs file
+
+-- This is just a temporary solution. See omnigraffle diagram to make a general solution.
+vcgen_iter :: IO ()
+vcgen_iter = do
+  (file:_) <- getArgs
+  content <- loadFile file
+  case content of
+    (Left error) -> putStrLn error
+    (Right stm) -> pretty_list_vcs.vcs_iter $ forLoopTrans stm
 
 main :: IO a
 main = 

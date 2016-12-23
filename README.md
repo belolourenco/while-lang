@@ -121,4 +121,6 @@ annotation  = assume | assert
 
 bound       = int
 
-VCGENs: $ vcgen file.wl VCGen
+VCGENs (pretty printing VCs): $ vcgen file.wl VCGen
+
+VCGENs (why3): $ vcgen-why3 file.wl VCGen

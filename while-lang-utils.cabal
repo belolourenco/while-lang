@@ -72,7 +72,7 @@ executable while-lang-parser
                        mtl >= 2.2 && < 2.3,
                        text >= 1.2 && < 1.3,
                        why3 >= 0.8 && < 0.9,
-                       process >= 1.2 && < 1.3
+                       process >= 1.2 && < 2
 
 executable transSAFor
   main-is: Language/Main.hs
@@ -86,7 +86,7 @@ executable transSAFor
                        mtl >= 2.2 && < 2.3,
                        text >= 1.2 && < 1.3,
                        why3 >= 0.8 && < 0.9,
-                       process >= 1.2 && < 1.3
+                       process >= 1.2 && < 2
 
 executable transSAHavoc
   main-is: Language/Main.hs
@@ -100,7 +100,7 @@ executable transSAHavoc
                        mtl >= 2.2 && < 2.3,
                        text >= 1.2 && < 1.3,
                        why3 >= 0.8 && < 0.9,
-                       process >= 1.2 && < 1.3
+                       process >= 1.2 && < 2
 
 executable vcgen
   main-is: Language/Main.hs
@@ -114,7 +114,7 @@ executable vcgen
                        mtl >= 2.2 && < 2.3,
                        text >= 1.2 && < 1.3,
                        why3 >= 0.8 && < 0.9,
-                       process >= 1.2 && < 1.3
+                       process >= 1.2 && < 2
 
 executable vcgen_iter
   main-is: Language/Main.hs
@@ -128,7 +128,7 @@ executable vcgen_iter
                        mtl >= 2.2 && < 2.3,
                        text >= 1.2 && < 1.3,
                        why3 >= 0.8 && < 0.9,
-                       process >= 1.2 && < 1.3
+                       process >= 1.2 && < 2
 
 executable unwind
   main-is: Language/Main.hs
@@ -142,7 +142,7 @@ executable unwind
                        mtl >= 2.2 && < 2.3,
                        text >= 1.2 && < 1.3,
                        why3 >= 0.8 && < 0.9,
-                       process >= 1.2 && < 1.3
+                       process >= 1.2 && < 2
 
 executable while-lang-vcgen
   main-is: Language/Main.hs
@@ -156,4 +156,4 @@ executable while-lang-vcgen
                        mtl >= 2.2 && < 2.3,
                        text >= 1.2 && < 1.3,
                        why3 >= 0.8 && < 0.9,
-                       process >= 1.2 && < 1.3
+                       process >= 1.2 && < 2

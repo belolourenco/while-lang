@@ -29,8 +29,8 @@ sp ctx asrt (phi,psi, SifSA b st sf) =
         , mkOr (mkAnd b mut)    (mkAnd (BnegSA b) muf)
         , vt++vf)
   where
-    (ft,psit,omegat,mut,vt) = sp ctx asrt (phi,mkAnd psi b, st)
-    (ff,psif,omegaf,muf,vf) = sp ctx asrt (phi,mkAnd psi (BnegSA b), sf)
+    (ft,psit,omegat,mut,vt) = sp ctx asrt (mkAnd phi b, mkAnd psi b, st)
+    (ff,psif,omegaf,muf,vf) = sp ctx asrt (mkAnd phi (BnegSA b), mkAnd psi (BnegSA b), sf)
 sp ctx asrt (phi,psi, StrySA s1 s2) = 
         (mkOr f1 (mkAnd omega1 f2)
         , mkOr psi1 (mkAnd mu1 psi2)

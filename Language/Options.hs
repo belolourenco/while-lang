@@ -8,6 +8,8 @@ import System.IO
 import Language.VCGens.FrontEnd
 import Language.LoopTreatement.LoopUnroll
 
+data PPFormat = PPNormal | PPTex | PPNone deriving (Show,Eq)
+
 data Opts = Opts
   { optFile    :: String
   , optVCGen   :: VCGen
@@ -17,10 +19,10 @@ data Opts = Opts
   , optHavoc   :: Bool
   , optForDV   :: Bool
   , optForBV   :: Bool
-  , optPP      :: Bool
+  , optPP      :: PPFormat
   } deriving Show
 
-optsInit = Opts "" PSP Nothing Nothing False False False False False
+optsInit = Opts "" PSP Nothing Nothing False False False False PPNone
 
 options :: [OptDescr (Opts -> IO Opts)]
 options =
@@ -31,8 +33,11 @@ options =
          (NoArg showHelp)
          "show help"
      , Option ['p'] ["pp"]
-         (NoArg (\o -> return $ o {optPP = True}))
+         (NoArg (\o -> return $ o {optPP = PPNormal}))
          "pretty-print VCs only"
+     , Option ['t'] ["tex"]
+         (NoArg (\o -> return $ o {optPP = PPTex}))
+         "pretty-print VCs only in tex"
      , Option [] ["unwind_loops"]
          (NoArg (\o -> return $ o {optLoopUnw = True}))
          "unwind loops (requires 'unwind_bound' and 'unwind_annotation')"

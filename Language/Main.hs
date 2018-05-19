@@ -5,6 +5,7 @@ import Text.PrettyPrint
 import Control.Monad.State
 import System.Exit
 import System.Process
+import Data.List
 
 import Language.Why3.PP
 
@@ -42,7 +43,7 @@ translation_to_SAHavoc = do
   r <- loadFile file
   case r of
     (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ havocTrans (read version) smt
+    (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
 
 vcgen :: IO ()
 vcgen = do 
@@ -50,7 +51,20 @@ vcgen = do
   content <- loadFile file
   case content of
     (Left error) -> putStrLn error
-    (Right stm) -> pretty_list_vcs $ vcs (havocTrans 1 stm) (vc a)
+    (Right stm) -> pretty_list_vcs $ vcs (havocTrans stm) (vc a)
+    where vc :: String -> VCGen
+          vc "psp" = PSP
+          vc "pspplus" = PSPPlus
+          vc "gsp" = GSP
+          vc "gspplus" = GSPPlus
+          vc "pcnf" = PCNF
+          vc "pcnfplus" = PCNFPlus
+          vc "gcnf" = GCNF
+          vc "gcnfplus" = GCNFPlus
+          vc "plin" = PLin
+          vc "plinplus" = PLinPlus
+          vc "glin" = GLin
+          vc "glinplus" = GLinPlus
 
 -- This is just a temporary solution. See omnigraffle diagram to make a general solution.
 vcgen_iter :: IO ()
@@ -68,6 +82,10 @@ unwind = do
   case content of
     (Left error) -> putStrLn error
     (Right stm) -> putStrLn.render.pretty $ loop_unroll (ann annotation) (read bound) stm
+  where
+    ann :: String -> UnwindAnnotation
+    ann "assume" = AssumeAnn
+    ann "assert" = AssertAnn
 
 toTex :: BexpSA -> Doc
 toTex BtrueSA        = text "true"
@@ -97,40 +115,48 @@ pretty_tex_list_vcs s = putStrLn.render.vcat $ wrap $ map (\i -> text "\\item $"
   where wrap l = text "\\begin{enumerate}" : l ++ [text "\\end{enumerate}"]
 
 
-output :: PPFormat -> SetExpr -> String -> IO ()
-output PPNormal s f = pretty_list_vcs s
-output PPTex s f = pretty_tex_list_vcs s
-output PPNone s f = (writeFile why3file $ show $ ppTh (setExpr2why3theory s))
-                    >> readProcess "why3" ["ide",why3file] [] >>= putStrLn
-  where why3file = (takeWhile (/='.') f) ++ ".why"
+-- output :: PPFormat -> SetExpr -> String -> IO ()
+-- output PPNormal s f = pretty_list_vcs s
+-- output PPTex s f = pretty_tex_list_vcs s
+-- output PPNone s f = (writeFile why3file $ show $ ppTh (setExpr2why3theory s))
+--                     >> readProcess "why3" ["ide",why3file] [] >>= putStrLn
+--   where why3file = (takeWhile (/='.') f) ++ ".why"
 
-main :: IO a
+getProg :: Maybe Opt -> IO Stm
+getProg Nothing =
+  do parseOut <- loadStdin
+     case parseOut of
+       (Left e) -> putStrLn e >> exitFailure
+       (Right stm) -> return stm
+getProg (Just (OinFile f)) =
+  do parseOut <- loadFile f
+     case parseOut of
+       (Left e) -> putStrLn e >> exitFailure
+       (Right stm) -> return stm
+
+loopUnroll :: Maybe Opt -> Bool -> Stm -> Stm
+loopUnroll Nothing _ s = s
+loopUnroll (Just (Obmc k)) True s = loop_unroll AssertAnn k s
+loopUnroll (Just (Obmc k)) False s = loop_unroll AssumeAnn k s
+
+saTranslation :: Bool -> Stm -> StmSA
+saTranslation True s = forLoopTrans s
+saTranslation False s = havocTrans s
+
+main :: IO ()
 main = 
   do args <- getArgs
      opts <- optionsParser args
-     case opts of
-       (Left e)  -> putStrLn e >> exitFailure
-       (Right o) -> do fContent <- loadFile $ optFile o
-                       case fContent of
-                            (Left e) -> putStrLn e >> exitFailure
-                            (Right stm) -> translation stm o
+     putStrLn (show opts)
+     if elem Ohelp opts then showHelp else return ()
+     if elem Oversion opts then showVersion else return ()
+     stmIn <- getProg (find isInFile opts)
+     let stmBmc = loopUnroll (find doBmc opts) (elem Oassert opts) stmIn
+     let stmSA = saTranslation (elem OsaFor opts) stmBmc
+     putStrLn.render.pretty $ stmSA
   where
-    translation :: Stm -> Opts -> IO a
-    translation stm o@(Opts f v (Just a) (Just b) True _ _ _ pp)
-      = let stm_unnwound   = loop_unroll a b stm
-            stm_translated = havocTrans 1 stm_unnwound
-            vcs_result     = vcs stm_translated v
-        in (output pp vcs_result f) >> exitSuccess
-    translation stm o@(Opts _ v _ _ True _ _ _ pp)
-      = putStrLn "Make sure you selected a bound and an unwinding annotation"
-          >> exitFailure
-    translation stm o@(Opts f v Nothing _ _ True _ _ pp) 
-      = let stm_translated = havocTrans 1 stm
-            vcs_result     = vcs stm_translated v
-        in (output pp vcs_result f) >> exitSuccess
-    translation stm o@(Opts f v Nothing _ _ _ True _ pp) 
-      = let stm_translated = forLoopTrans stm
-            vcs_result     = vcs_iter stm_translated
-        in (output pp vcs_result f) >> exitSuccess
-    translation stm o@(Opts f v Nothing _ _ _ _ True pp)
-      = putStrLn "NOT IMPLEMENTED YET!!!!\n" >> exitFailure
+    isInFile (OinFile f) = True
+    isInFile _ = False
+
+    doBmc (Obmc _) = True
+    doBmc _ = False

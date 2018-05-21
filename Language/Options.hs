@@ -17,6 +17,7 @@ data Opt =
   | OoutVC File
   | Otex
   | OVCGen String
+  | OVOp String
   | Oversion
   | Ohelp
   deriving (Eq,Show)
@@ -46,7 +47,9 @@ options =
      , Option [] ["tex"] (NoArg Otex)
        "output tex format"
      , Option [] ["vcgen"] (ReqArg (\s -> OVCGen s) "VCGen")
-       "select VCGen (default: linpa)"
+       "select VCGen (default: lin)"
+     , Option [] ["vcgenop"] (ReqArg (\s -> OVOp s) "VCGenOp")
+       "select option for VCGen (default: pa; possible: p,pa,g,ga)"
      ]
 
 showVersion :: IO a

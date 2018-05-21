@@ -5,3 +5,8 @@ data Context = Glob
 
 data AsrtCtx = AsrtIn
                | AsrtNot
+
+data VOp = VCP | VCPA | VCG | VCGA
+
+data VCGen = SP | CNF | LIN
+           deriving Show

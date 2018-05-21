@@ -18,74 +18,75 @@ import Language.WhileSA.Types
 import Language.WhileSA.PrettyPrinter
 import Language.Translations.TranslationFor
 import Language.Translations.TranslationHavoc
+import Language.VCGens.Base
 import Language.VCGens.FrontEnd
 import Language.Logic.Types
 import Language.Logic.Why3Encoder
 import Language.LoopTreatement.LoopUnroll
 
-parse_while_lang :: IO ()
-parse_while_lang = do 
-  r <- getArgs >>= loadFile.head
-  case r of
-    (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ smt
+-- parse_while_lang :: IO ()
+-- parse_while_lang = do 
+--   r <- getArgs >>= loadFile.head
+--   case r of
+--     (Left error) -> putStrLn error
+--     (Right smt)  -> putStrLn.render.pretty $ smt
 
-translation_to_SAFor :: IO ()
-translation_to_SAFor = do 
-  r <- getArgs >>= loadFile.head
-  case r of
-    (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ forLoopTrans smt
+-- translation_to_SAFor :: IO ()
+-- translation_to_SAFor = do 
+--   r <- getArgs >>= loadFile.head
+--   case r of
+--     (Left error) -> putStrLn error
+--     (Right smt)  -> putStrLn.render.pretty $ forLoopTrans smt
 
-translation_to_SAHavoc :: IO ()
-translation_to_SAHavoc = do
-  version:file:_ <- getArgs
-  r <- loadFile file
-  case r of
-    (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
+-- translation_to_SAHavoc :: IO ()
+-- translation_to_SAHavoc = do
+--   version:file:_ <- getArgs
+--   r <- loadFile file
+--   case r of
+--     (Left error) -> putStrLn error
+--     (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
 
-vcgen :: IO ()
-vcgen = do 
-  (file:a:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> pretty_list_vcs $ vcs (havocTrans stm) (vc a)
-    where vc :: String -> VCGen
-          vc "psp" = PSP
-          vc "pspplus" = PSPPlus
-          vc "gsp" = GSP
-          vc "gspplus" = GSPPlus
-          vc "pcnf" = PCNF
-          vc "pcnfplus" = PCNFPlus
-          vc "gcnf" = GCNF
-          vc "gcnfplus" = GCNFPlus
-          vc "plin" = PLin
-          vc "plinplus" = PLinPlus
-          vc "glin" = GLin
-          vc "glinplus" = GLinPlus
+-- vcgen :: IO ()
+-- vcgen = do 
+--   (file:a:_) <- getArgs
+--   content <- loadFile file
+--   case content of
+--     (Left error) -> putStrLn error
+--     (Right stm) -> pretty_list_vcs $ vcs (havocTrans stm) (vc a)
+--     where vc :: String -> VCGen
+--           vc "psp" = PSP
+--           vc "pspplus" = PSPPlus
+--           vc "gsp" = GSP
+--           vc "gspplus" = GSPPlus
+--           vc "pcnf" = PCNF
+--           vc "pcnfplus" = PCNFPlus
+--           vc "gcnf" = GCNF
+--           vc "gcnfplus" = GCNFPlus
+--           vc "plin" = PLin
+--           vc "plinplus" = PLinPlus
+--           vc "glin" = GLin
+--           vc "glinplus" = GLinPlus
 
--- This is just a temporary solution. See omnigraffle diagram to make a general solution.
-vcgen_iter :: IO ()
-vcgen_iter = do
-  (file:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> pretty_list_vcs.vcs_iter $ forLoopTrans stm
+-- -- This is just a temporary solution. See omnigraffle diagram to make a general solution.
+-- vcgen_iter :: IO ()
+-- vcgen_iter = do
+--   (file:_) <- getArgs
+--   content <- loadFile file
+--   case content of
+--     (Left error) -> putStrLn error
+--     (Right stm) -> pretty_list_vcs.vcs_iter $ forLoopTrans stm
 
-unwind :: IO()
-unwind = do
-  (file:annotation:bound:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> putStrLn.render.pretty $ loop_unroll (ann annotation) (read bound) stm
-  where
-    ann :: String -> UnwindAnnotation
-    ann "assume" = AssumeAnn
-    ann "assert" = AssertAnn
+-- unwind :: IO()
+-- unwind = do
+--   (file:annotation:bound:_) <- getArgs
+--   content <- loadFile file
+--   case content of
+--     (Left error) -> putStrLn error
+--     (Right stm) -> putStrLn.render.pretty $ loop_unroll (ann annotation) (read bound) stm
+--   where
+--     ann :: String -> UnwindAnnotation
+--     ann "assume" = AssumeAnn
+--     ann "assert" = AssertAnn
 
 toTex :: BexpSA -> Doc
 toTex BtrueSA        = text "true"
@@ -143,6 +144,21 @@ saTranslation :: Bool -> Stm -> StmSA
 saTranslation True s = forLoopTrans s
 saTranslation False s = havocTrans s
 
+getVCGen :: Maybe Opt -> IO VCGen
+getVCGen Nothing = return LIN
+getVCGen (Just (OVCGen "sp" )) = return SP
+getVCGen (Just (OVCGen "cnf")) = return CNF
+getVCGen (Just (OVCGen "lin")) = return LIN
+getVCGen (Just (OVCGen _))     = ioError (userError "invalid vcgen")
+
+getVCGenOp :: Maybe Opt -> IO VOp
+getVCGenOp Nothing            = return VCPA
+getVCGenOp (Just (OVOp "p"))  = return VCP
+getVCGenOp (Just (OVOp "pa")) = return VCPA
+getVCGenOp (Just (OVOp "g"))  = return VCG
+getVCGenOp (Just (OVOp "ga")) = return VCGA
+getVCGenOp (Just (OVOp _))    = ioError (userError "invalid vcgen option")
+
 main :: IO ()
 main = 
   do args <- getArgs
@@ -153,10 +169,20 @@ main =
      stmIn <- getProg (find isInFile opts)
      let stmBmc = loopUnroll (find doBmc opts) (elem Oassert opts) stmIn
      let stmSA = saTranslation (elem OsaFor opts) stmBmc
-     putStrLn.render.pretty $ stmSA
+     vcgen <- getVCGen $ find selVCGen opts
+     vcgenop <- getVCGenOp $ find selVCGenOp opts
+     let vcs = generate stmSA vcgen vcgenop
+     -- putStrLn.render.pretty $ vcs
+     pretty_list_vcs vcs
   where
     isInFile (OinFile f) = True
     isInFile _ = False
 
     doBmc (Obmc _) = True
     doBmc _ = False
+
+    selVCGen (OVCGen _) = True
+    selVCGen _ = False
+
+    selVCGenOp (OVOp _) = True
+    selVCGenOp _ = False

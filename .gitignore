@@ -1,5 +1,7 @@
 .DS_Store
 *.hi
 *.o
+*.dyn_hi
+*.dyn_o
 *.why
 dist

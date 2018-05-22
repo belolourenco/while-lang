@@ -86,12 +86,12 @@ callWhy3 :: Bool -> [LExpr] -> IO ()
 callWhy3 False _ = return ()
 callWhy3 _ vcs   =
   do let dir = "why3-temp"
-         createDirectoryIfMissing False dir
-         let file = dir ++ "/vcs.why"
-         fileOut (Just file) (ppTh $ logic2why3theory vcs)
-         putStrLn $ "Wrote in " ++ file
-         readProcess "why3" ["ide",file] [] >>= putStrLn
-         removeDirectoryRecursive dir
+     createDirectoryIfMissing False dir
+     let file = dir ++ "/vcs.why"
+     fileOut (Just file) (ppTh $ logic2why3theory vcs)
+     putStrLn $ "Wrote in " ++ file
+     readProcess "why3" ["ide",file] [] >>= putStrLn
+     removeDirectoryRecursive dir
 
 main :: IO ()
 main = 

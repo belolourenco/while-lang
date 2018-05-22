@@ -4,8 +4,8 @@ import Language.Logic.Types
 import Language.WhileSA.Types
 import Language.VCGens.Base
 
-cnf :: Context -> AsrtCtx -> (Expr, Expr, Expr,StmSA)
-                           -> (Expr, Expr, Expr, Expr, SetExpr)
+cnf :: Context -> AsrtCtx -> (LExpr, LExpr, LExpr,StmSA)
+                           -> (LExpr, LExpr, LExpr, LExpr, [LExpr])
 cnf ctx asrt (pi,phi,gamma, SskipSA) =
   (BtrueSA, BtrueSA, mkImpl pi BfalseSA, mkImpl pi BfalseSA, [])
 cnf ctx asrt (pi,phi,gamma, SassSA x e) =

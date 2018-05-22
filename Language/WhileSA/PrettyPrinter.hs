@@ -82,3 +82,10 @@ instance Pretty StmSA where
                           (nest 2 $ pretty s2) $$
                           (text "endc")
   pretty SthrowSA         = text "throw"
+
+instance Pretty [BexpSA] where
+  pretty s = vcat $ aux 0 $ map pretty s
+    where
+      aux :: Int -> [Doc] -> [Doc]
+      aux x []    = []
+      aux x (h:t) = (text "\n" <+> int x <+> text "-" <+> h):(aux (x+1) t)

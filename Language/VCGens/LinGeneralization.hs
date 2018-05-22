@@ -4,7 +4,7 @@ import Language.Logic.Types
 import Language.WhileSA.Types
 import Language.VCGens.Base
 
-lin :: Context -> AsrtCtx -> StmSA -> (Expr, Expr, Expr, Expr, Expr)
+lin :: Context -> AsrtCtx -> StmSA -> (LExpr, LExpr, LExpr, LExpr, LExpr)
 lin ctx asrt SskipSA         =
   (BtrueSA, BtrueSA, BfalseSA, BfalseSA, BtrueSA)
 lin ctx asrt (SassSA x e)    =

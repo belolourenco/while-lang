@@ -8,7 +8,7 @@ import Language.VCGens.CNFGeneralization
 import Language.VCGens.LinGeneralization
 import Language.VCGens.Linear_Iter
 
-generate :: StmSA -> VCGen -> VOp -> SetExpr
+generate :: StmSA -> VCGen -> VOp -> [LExpr]
 generate s SP VCP   = let (_,_,_,_,v) = sp Part AsrtNot (BtrueSA,BtrueSA,s) in v
 generate s SP VCPA  = let (_,_,_,_,v) = sp Part AsrtIn (BtrueSA,BtrueSA,s) in v
 generate s SP VCG   = let (phi,_,_,_,v) = sp Glob AsrtNot (BtrueSA,BtrueSA,s) 
@@ -29,5 +29,5 @@ generate s LIN VCGA = let (psi,_,_,_,v) = lin Glob AsrtIn s
                       in [mkImpl psi v]
 
 -- This is just a temporary solution. See omnigraffle diagram for a cleaner solution
-vcs_iter :: StmSA -> SetExpr
+vcs_iter :: StmSA -> [LExpr]
 vcs_iter s = let (psi, gamma, t) = lin_iter s in (t ++ [gamma] ++ [psi])

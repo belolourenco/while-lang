@@ -22,6 +22,7 @@ import Language.VCGens.Base
 import Language.VCGens.FrontEnd
 import Language.Logic.Types
 import Language.Logic.Why3Encoder
+import Language.Logic.TexPrinter
 import Language.LoopTreatement.LoopUnroll
 
 -- parse_while_lang :: IO ()
@@ -88,34 +89,6 @@ import Language.LoopTreatement.LoopUnroll
 --     ann "assume" = AssumeAnn
 --     ann "assert" = AssertAnn
 
-toTex :: BexpSA -> Doc
-toTex BtrueSA        = text "true"
-toTex BfalseSA       = text "false"
-toTex (BVariableSA n)= pretty n
-toTex (BeqSA e1 e2)  = pretty e1 <> text " = " <> pretty e2
-toTex (BleqSA e1 e2) = pretty e1 <> text " \\le " <> pretty e2
-toTex (BlSA e1 e2)   = pretty e1 <> text " < " <> pretty e2
-toTex (BgSA e1 e2)   = pretty e1 <> text " > " <> pretty e2
-toTex (BgeqSA e1 e2) = pretty e1 <> text " \\ge " <> pretty e2
-toTex (BnegSA e1)     = l <> text " \\neg " <> toTex e1 <> r
-toTex (BandSA e1 e2)  = l <> toTex e1 <> text " \\andd " <> toTex e2 <> r
-toTex (BorSA e1 e2)   = l <> toTex e1 <> text " \\orr " <> toTex e2 <> r
-toTex (BimplSA e1 e2) = l <> toTex e1 <> text " \\to " <> toTex e2 <> r
-
-
-pretty_list_vcs :: SetExpr -> IO ()
-pretty_list_vcs s = putStrLn.render.vcat $ aux 0 $ map pretty s
-  where
-    aux :: Int -> [Doc] -> [Doc]
-    aux x []    = []
-    aux x (h:t) = (text "\n" <+> int x <+> text "-" <+> h):(aux (x+1) t)
-
-pretty_tex_list_vcs :: SetExpr -> IO ()
-pretty_tex_list_vcs s = putStrLn.render.vcat $ wrap $ map (\i -> text "\\item $" <> i <> text "$")
-                                                    $ map toTex s
-  where wrap l = text "\\begin{enumerate}" : l ++ [text "\\end{enumerate}"]
-
-
 -- output :: PPFormat -> SetExpr -> String -> IO ()
 -- output PPNormal s f = pretty_list_vcs s
 -- output PPTex s f = pretty_tex_list_vcs s
@@ -123,66 +96,90 @@ pretty_tex_list_vcs s = putStrLn.render.vcat $ wrap $ map (\i -> text "\\item $"
 --                     >> readProcess "why3" ["ide",why3file] [] >>= putStrLn
 --   where why3file = (takeWhile (/='.') f) ++ ".why"
 
-getProg :: Maybe Opt -> IO Stm
+
+showVersion :: Bool -> IO ()
+showVersion False = return ()
+showVersion _     = (putStrLn "while-lang-vcgen 0.2")
+                    >> exitWith ExitSuccess
+
+showHelp ::  Bool -> IO ()
+showHelp False = return ()
+showHelp _     = (putStrLn uInfo)
+                 >> exitWith ExitSuccess
+
+getProg :: Maybe File -> IO Stm
 getProg Nothing =
   do parseOut <- loadStdin
      case parseOut of
        (Left e) -> putStrLn e >> exitFailure
        (Right stm) -> return stm
-getProg (Just (OinFile f)) =
+getProg (Just f) =
   do parseOut <- loadFile f
      case parseOut of
        (Left e) -> putStrLn e >> exitFailure
        (Right stm) -> return stm
 
-loopUnroll :: Maybe Opt -> Bool -> Stm -> Stm
+loopUnroll :: Maybe Int -> Bool -> Stm -> Stm
 loopUnroll Nothing _ s = s
-loopUnroll (Just (Obmc k)) True s = loop_unroll AssertAnn k s
-loopUnroll (Just (Obmc k)) False s = loop_unroll AssumeAnn k s
+loopUnroll (Just k) True s = loop_unroll AssertAnn k s
+loopUnroll (Just k) False s = loop_unroll AssumeAnn k s
 
 saTranslation :: Bool -> Stm -> StmSA
 saTranslation True s = forLoopTrans s
 saTranslation False s = havocTrans s
 
-getVCGen :: Maybe Opt -> IO VCGen
+getVCGen :: Maybe String -> IO VCGen
 getVCGen Nothing = return LIN
-getVCGen (Just (OVCGen "sp" )) = return SP
-getVCGen (Just (OVCGen "cnf")) = return CNF
-getVCGen (Just (OVCGen "lin")) = return LIN
-getVCGen (Just (OVCGen _))     = ioError (userError "invalid vcgen")
+getVCGen (Just "sp" ) = return SP
+getVCGen (Just "cnf") = return CNF
+getVCGen (Just "lin") = return LIN
+getVCGen (Just _    ) = ioError (userError "invalid vcgen")
 
-getVCGenOp :: Maybe Opt -> IO VOp
-getVCGenOp Nothing            = return VCPA
-getVCGenOp (Just (OVOp "p"))  = return VCP
-getVCGenOp (Just (OVOp "pa")) = return VCPA
-getVCGenOp (Just (OVOp "g"))  = return VCG
-getVCGenOp (Just (OVOp "ga")) = return VCGA
-getVCGenOp (Just (OVOp _))    = ioError (userError "invalid vcgen option")
+getVCGenOp :: Maybe String -> IO VOp
+getVCGenOp Nothing     = return VCPA
+getVCGenOp (Just "p" ) = return VCP
+getVCGenOp (Just "pa") = return VCPA
+getVCGenOp (Just "g" ) = return VCG
+getVCGenOp (Just "ga") = return VCGA
+getVCGenOp (Just _   ) = ioError (userError "invalid vcgen option")
+
+stdout :: (Pretty a) => Bool -> String -> a -> IO ()
+stdout False _ _ = return ()
+stdout _     s p = let s' = "\n** " ++ s ++ " **"
+                   in putStrLn s' >> (putStrLn.render.pretty $ p)
+
+fileOut :: (Pretty a) => Maybe File -> a -> IO ()
+fileOut Nothing _  = return ()
+fileOut (Just f) x = (writeFile f).render.pretty $ x
+
+texPrint :: Maybe File -> [LExpr] -> IO ()
+texPrint f vcs = fileOut f (toTexL vcs)
 
 main :: IO ()
 main = 
   do args <- getArgs
      opts <- optionsParser args
      putStrLn (show opts)
-     if elem Ohelp opts then showHelp else return ()
-     if elem Oversion opts then showVersion else return ()
-     stmIn <- getProg (find isInFile opts)
-     let stmBmc = loopUnroll (find doBmc opts) (elem Oassert opts) stmIn
+     showHelp (elem Ohelp opts)
+     showVersion (elem Oversion opts)
+     stmIn <- getProg $ oFile opts
+     stdout (elem Odebug opts) "Original Program" stmIn
+     let stmBmc = loopUnroll (oBmc opts) (elem Oassert opts) stmIn
      let stmSA = saTranslation (elem OsaFor opts) stmBmc
-     vcgen <- getVCGen $ find selVCGen opts
-     vcgenop <- getVCGenOp $ find selVCGenOp opts
+     fileOut (oOutSA opts) stmSA
+     stdout (elem Odebug opts) "SA Program" stmSA
+     vcgen <- getVCGen $ oVCGen opts
+     vcgenop <- getVCGenOp $ oVOp opts
      let vcs = generate stmSA vcgen vcgenop
-     -- putStrLn.render.pretty $ vcs
-     pretty_list_vcs vcs
+     fileOut (oOutVC opts) vcs
+     texPrint (oOutVCTex opts) vcs
+     stdout (elem Odebug opts) "VCs" vcs
   where
-    isInFile (OinFile f) = True
-    isInFile _ = False
+    oFile o     = find isOfile o     >>= (\(Ofile f) -> Just f)
+    oBmc o      = find isObmc o      >>= (\(Obmc b) -> Just b)
+    oOutSA o    = find isOoutSA o    >>= (\(OoutSA b) -> Just b)
+    oOutVC o    = find isOoutVC o    >>= (\(OoutVC b) -> Just b)
+    oOutVCTex o = find isOoutVCTex o >>= (\(OoutVCTex b) -> Just b)
+    oVCGen o    = find isOVCGen o    >>= (\(OVCGen g) -> Just g)
+    oVOp o      = find isOVOp o      >>= (\(OVOp op) -> Just op)
 
-    doBmc (Obmc _) = True
-    doBmc _ = False
-
-    selVCGen (OVCGen _) = True
-    selVCGen _ = False
-
-    selVCGenOp (OVOp _) = True
-    selVCGenOp _ = False

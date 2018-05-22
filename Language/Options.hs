@@ -1,12 +1,16 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Language.Options where
 
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
 import System.IO
+import Data.DeriveTH
+
+type File = String
 
 data Opt =
-    OinFile File
+    Ofile File
   | OsaHavoc  -- default
   | OsaFor
   | Obmc Int
@@ -15,14 +19,14 @@ data Opt =
   | Odebug
   | OoutSA File
   | OoutVC File
-  | Otex
+  | OoutVCTex File
   | OVCGen String
   | OVOp String
   | Oversion
   | Ohelp
-  deriving (Eq,Show)
+  deriving (Eq,Ord,Show)
 
-type File = String
+$(derive makeIs ''Opt)
 
 options :: [OptDescr Opt]
 options =
@@ -40,11 +44,13 @@ options =
        "use unwinding assumption (default)"
      , Option [] ["assert"] (NoArg Oassert)
        "use unwinding assertion"
+     , Option [] ["debug"] (NoArg Odebug)
+       "debug intermediate representation"
      , Option [] ["out-sa"] (ReqArg (\s -> OoutSA s) "FILE")
        "output SA program"
      , Option [] ["out-vc"] (ReqArg (\s -> OoutVC s) "FILE")
        "output VC"
-     , Option [] ["tex"] (NoArg Otex)
+     , Option [] ["out-vc-tex"] (ReqArg (\s -> OoutVCTex s) "FILE")
        "output tex format"
      , Option [] ["vcgen"] (ReqArg (\s -> OVCGen s) "VCGen")
        "select VCGen (default: lin)"
@@ -52,19 +58,15 @@ options =
        "select option for VCGen (default: pa; possible: p,pa,g,ga)"
      ]
 
-showVersion :: IO a
-showVersion = do putStrLn "while-lang-vcgen 0.2"
-                 exitWith ExitSuccess
+uHeader :: String
+uHeader = "Usage: \n\n while-vcgen [OPTION...] file_name\n"
 
-showHelp ::  IO a
-showHelp = (putStrLn $ usageInfo usage_header options)
-           >>  exitWith ExitSuccess
+uInfo :: String
+uInfo = usageInfo uHeader options
 
-usage_header = "Usage: \n\n while-vcgen [OPTION...] file_name\n"
-  
 optionsParser :: [String] -> IO [Opt]
 optionsParser a = 
   do case getOpt Permute options a of
        (o, [],[])  -> return o
-       (o, (f:_),[])  -> return $ (OinFile f):o
-       (_,_,e) -> ioError (userError (concat e ++ usageInfo usage_header options))
+       (o, (f:_),[])  -> return $ (Ofile f):o
+       (_,_,e) -> ioError (userError (concat e ++ uInfo))

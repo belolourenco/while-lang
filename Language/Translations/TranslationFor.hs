@@ -1,123 +1,75 @@
 module Language.Translations.TranslationFor where
 
-import Control.Monad.State
+import Data.Maybe
+import Text.PrettyPrint
 
+import Language.While.PrettyPrinter
+import Language.WhileSA.PrettyPrinter
 import Language.While.Utils.Utils
 import Language.While.Types
 import Language.WhileSA.Types
 import Language.Translations.Base
 
 -- * Translation for SA-For language
-tsaAexp :: Aexp -> State VersionList AexpSA
-tsaAexp (Numeral i) = return $ NumeralSA i
-tsaAexp (Variable n) = getVar n >>= \x -> return $ VariableSA x
-tsaAexp (Aadd e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ AaddSA x y
-tsaAexp (Asub e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ AsubSA x y
-tsaAexp (Amul e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ AmulSA x y
-tsaAexp (Adiv e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ AdivSA x y
-
-tsaBexp :: Bexp -> State VersionList BexpSA
-tsaBexp Btrue        = return BtrueSA
-tsaBexp Bfalse       = return BfalseSA
-tsaBexp (BVariable n)= getVar n >>= \x -> return $ BVariableSA x
-tsaBexp (Beq e1 e2)  = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ BeqSA x y
-tsaBexp (Bleq e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ BleqSA x y
-tsaBexp (Bl e1 e2)   = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ BlSA x y
-tsaBexp (Bg e1 e2)   = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ BgSA x y
-tsaBexp (Bgeq e1 e2) = tsaAexp e1 >>= \x -> tsaAexp e2 
-                                  >>= \y -> return $ BgeqSA x y
-tsaBexp (Bneg b)     = tsaBexp b >>= \x -> return $ BnegSA x
-tsaBexp (Band b1 b2) = tsaBexp b1 >>= \x -> tsaBexp b2
-                                  >>= \y -> return $ BandSA x y
-tsaBexp (Bor b1 b2) = tsaBexp b1 >>= \x -> tsaBexp b2
-                                  >>= \y -> return $ BorSA x y
-tsaBexp (Bimpl b1 b2) = tsaBexp b1 >>= \x -> tsaBexp b2
-                                  >>= \y -> return $ BimplSA x y
-
-
-tsa :: Stm -> State VersionList StmSA
-tsa (Sass n e)    = tsaAexp e >>= \e' -> nextVar n 
-                           >>  getVar n
-                           >>= \n' -> return $ SassSA n' e'
-tsa Sskip         = return SskipSA
-tsa (Sassume b)   = tsaBexp b >>= return.SassumeSA
-tsa (Sassert b)   = tsaBexp b >>= return.SassertSA
-tsa (Scomp s1 s2) = tsa s1 >>= \s1' -> tsa s2
-                           >>= \s2' -> return $ ScompSA s1' s2'
-tsa (Sif b s1 s2) = do
-  v <- get
-  b'  <- tsaBexp b
-  s1' <- tsa s1
-  v' <- get
-  put v
-  s2' <- tsa s2
-  v'' <- get
-  put $ sup v' v''
-  return $ SifSA b' (ScompSA s1' (rnmToAssign $ merge v' v'')) 
-                    (ScompSA s2' (rnmToAssign $ merge v'' v'))
-tsa (Swhile b s) = do
-  let asgn_c = asgn s
-  v <- get
-  i <- create_i asgn_c
-  v' <- upd_v' asgn_c
-  b' <- tsaBexp b
-  s' <- tsa s
-  u <- create_u asgn_c v
-  let dom_u = map fst u
-  mapM_ (\x -> replacesVar (fst x) (jump $ snd x)) dom_u
-  return $ ScompSA  (SforSA i b' u s')
-                    (rnmToAssign $ upd dom_u)
+tsaFor :: Stm -> Versions -> (Maybe Versions,Maybe Versions,StmSA)
+tsaFor (Scomp s1 s2) vs =
+  let (vs1,vse1,s1') = tsaFor s1 vs
+      (vs2,vse2,s2') = if isNothing vs1 then
+                         error ("unreachable code after: " ++ (render.pretty $ s1'))
+                       else tsaFor s2 (fromJust vs1)
+  in (vs2
+     , sup vse1 vse2
+     , mkComp (mkMrgEx s1' vse1 vse2) (mkMrgEx s2' vse2 vse1))
+tsaFor (Sif b s1 s2) vs =
+  let b' = tsaBexp b vs
+      (vs1,vse1,s1') = tsaFor s1 vs
+      (vs2,vse2,s2') = tsaFor s2 vs
+      s1sync = mkComp s1' (rnmToAssign $ merge vs1 vs2)
+      s2sync = mkComp s2' (rnmToAssign $ merge vs2 vs1)
+  in (sup vs1 vs2
+     , sup vse1 vse2
+     , SifSA b' (mkMrgEx s1sync vse1 vse2) (mkMrgEx s2sync vse2 vse1))
+tsaFor (Swhile b s)  vs = tsaFor (SwhileInv b Btrue s) vs
+tsaFor (SwhileInv b inv s) vs =
+  let asgn_s = asgn s
+      vs' = initVars asgn_s vs
+      asgn_vs = filter (\(n,v) -> elem n asgn_s) vs'
+      initVs = mkRnm asgn_vs vs
+      b' = tsaBexp b vs'
+      inv' = tsaBexp inv vs'
+      (vs1,ve1,s1) = tsaFor s vs'
+      updVs = if isNothing vs1 then
+                error ("unreachable code after: " ++ (render.pretty $ s1))
+              else mkRnm asgn_vs (fromJust vs1)
+      all = ScompSA (SforInvSA initVs b' updVs inv' s1) (rnmToAssign $ upd asgn_vs)
+      v'' = map (finalVersion asgn_vs) (fromJust vs1)
+  in (Just v'', ve1, all)
   where
-    create_i :: [Varname] -> State VersionList Rnm
-    create_i []     = return []
-    create_i (n:ns) = getVarVer n >>= \v -> create_i ns 
-                                  >>= \ns' -> return $ ((n,new v), (n, v)):ns'
+    initVars :: [Varname] -> Versions -> Versions
+    initVars v vs = foldr newVar vs v
 
-    upd_v' :: [Varname] -> State VersionList VersionList
-    upd_v' []     = get >>= return
-    upd_v' (n:ns) = newVar n >> upd_v' ns
+    mkRnm :: Versions -> Versions -> Rnm
+    mkRnm v1 v2 = foldr (\(n,v) vs -> ((n,v),getVar n v2) : vs) [] v1
 
-    create_u :: [Varname] -> VersionList -> State VersionList Rnm
-    create_u []     vl = return []
-    create_u (n:ns) vl = getVarVer n >>= \v' -> create_u ns vl
-                                     >>= \ns' -> return $ ((n, new $ getVarVerAux n vl),(n,v')):ns'
-tsa (SwhileInv b inv s) = do
-  let asgn_c = asgn s
-  v <- get
-  i <- create_i asgn_c
-  v' <- upd_v' asgn_c
-  b' <- tsaBexp b
-  inv' <- tsaBexp inv
-  s' <- tsa s
-  u <- create_u asgn_c v
-  let dom_u = map fst u
-  mapM_ (\x -> replacesVar (fst x) (jump $ snd x)) dom_u
-  return $ ScompSA  (SforInvSA i b' u inv' s')
-                    (rnmToAssign $ upd dom_u)
-  where
-    create_i :: [Varname] -> State VersionList Rnm
-    create_i []     = return []
-    create_i (n:ns) = getVarVer n >>= \v -> create_i ns 
-                                  >>= \ns' -> return $ ((n,new v), (n, v)):ns'
-
-    upd_v' :: [Varname] -> State VersionList VersionList
-    upd_v' []     = get >>= return
-    upd_v' (n:ns) = newVar n >> upd_v' ns
-
-    create_u :: [Varname] -> VersionList -> State VersionList Rnm
-    create_u []     vl = return []
-    create_u (n:ns) vl = getVarVer n >>= \v' -> create_u ns vl
-                                     >>= \ns' -> return $ ((n, new $ getVarVerAux n vl),(n,v')):ns'
---tsa (Stry Stm Stm
+    finalVersion :: Versions -> VarnameSA -> VarnameSA
+    finalVersion vs (n,v) = case lookup n vs of
+                              Nothing -> (n,v)
+                              Just v -> (n,jump v)
+    
+tsaFor (Stry s1 s2) vs = 
+  let (vs1,vse1,s1') = tsaFor s1 vs
+      (vs2,vse2,s2') = if isNothing vse1 then
+                         error "unreachable catch statement"
+                       else
+                         tsaFor s2 (fromJust vse1)
+  in (sup vs1 vs2
+     , vse2
+     , StrySA (mkComp s1' (rnmToAssign $ merge vs1 vs2))
+       (mkComp s2' (rnmToAssign $ merge vs2 vs1)))
+tsaFor Sthrow vs = (Nothing, Just vs, SthrowSA)
+tsaFor s vs = tsa s vs
 
 -- * Main function. Transforms a Stm into SA-for language (StmSA)
 forLoopTrans :: Stm -> StmSA
-forLoopTrans s = evalState (tsa s) (initV $ vars s)
+forLoopTrans s = let (_,_,s') = tsaFor s (initV $ vars s)
+                 in s'

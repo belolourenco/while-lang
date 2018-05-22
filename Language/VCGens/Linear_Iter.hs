@@ -32,7 +32,7 @@ applyRnm r (BandSA b1 b2)   = BandSA (applyRnm r b1) (applyRnm r b2)
 applyRnm r (BorSA b1 b2)    = BorSA (applyRnm r b1) (applyRnm r b2)
 applyRnm r (BimplSA b1 b2)  = BimplSA (applyRnm r b1) (applyRnm r b2)
 
-lin_iter :: StmSA -> (Expr, Expr, [Expr])
+lin_iter :: StmSA -> (LExpr, LExpr, [LExpr])
 lin_iter SskipSA                = (BtrueSA, BtrueSA, [])
 lin_iter (SassSA x e)           = (BeqSA (VariableSA x) e, BtrueSA, [])
 lin_iter (ScompSA s1 s2)        = (mkAnd psi1 psi2

@@ -79,4 +79,13 @@ instance Pretty StmSA where
   pretty (StrySA s1 s2)   = (text "try") $$
                           (nest 2 $ pretty s1) $$
                           (text "catch") $$
-                          (nest 2 $ pretty s2)
+                          (nest 2 $ pretty s2) $$
+                          (text "endc")
+  pretty SthrowSA         = text "throw"
+
+instance Pretty [BexpSA] where
+  pretty s = vcat $ aux 0 $ map pretty s
+    where
+      aux :: Int -> [Doc] -> [Doc]
+      aux x []    = []
+      aux x (h:t) = (text "\n" <+> int x <+> text "-" <+> h):(aux (x+1) t)

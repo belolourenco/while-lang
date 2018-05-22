@@ -1,93 +1,78 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Language.Options where
 
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
 import System.IO
+import Data.DeriveTH
 
-import Language.VCGens.FrontEnd
-import Language.LoopTreatement.LoopUnroll
+type File = String
 
-data Opts = Opts
-  { optFile    :: String
-  , optVCGen   :: VCGen
-  , optLoopAnn :: Maybe UnwindAnnotation
-  , optBound   :: Maybe Integer
-  , optLoopUnw :: Bool
-  , optHavoc   :: Bool
-  , optForDV   :: Bool
-  , optForBV   :: Bool
-  , optPP      :: Bool
-  } deriving Show
+data Opt =
+    Ofile File
+  | OsaHavoc  -- default
+  | OsaFor
+  | Obmc Int
+  | Oassume   -- default
+  | Oassert   
+  | Odebug
+  | OoutSA File
+  | OoutVC File
+  | OoutVCTex File
+  | OoutWhy3 File
+  | Owhy3
+  | OVCGen String
+  | OVOp String
+  | Oversion
+  | Ohelp
+  deriving (Eq,Ord,Show)
 
-optsInit = Opts "" PSP Nothing Nothing False False False False False
+$(derive makeIs ''Opt)
 
-options :: [OptDescr (Opts -> IO Opts)]
+options :: [OptDescr Opt]
 options =
-     [ Option ['v','?'] ["version"]
-         (NoArg showVersion) 
+     [ Option ['v','?'] ["version"] (NoArg Oversion) 
          "show version number"
-     , Option ['h'] ["help"]
-         (NoArg showHelp)
+     , Option ['h'] ["help"] (NoArg Ohelp)
          "show help"
-     , Option ['p'] ["pp"]
-         (NoArg (\o -> return $ o {optPP = True}))
-         "pretty-print VCs only"
-     , Option [] ["unwind_loops"]
-         (NoArg (\o -> return $ o {optLoopUnw = True}))
-         "unwind loops (requires 'unwind_bound' and 'unwind_annotation')"
-     , Option [] ["havoc_trans"]
-         (NoArg (\o -> return $ o {optHavoc = True}))
-         "Havoc translation"
-     , Option [] ["for_loops_dv"]
-         (NoArg (\o -> return $ o {optForDV = True}))
-         "FOR loops translation with Deductive Verification"
-     , Option [] ["for_loops_dv"]
-         (NoArg (\o -> return $ o {optForBV = True}))
-         "FOR loops translation with Bounded Verification"
-     , Option ['b'] ["unwind_bound"]
-         (ReqArg (\a o -> return $ o {optBound = Just (read a)}) "N")
-         "unwinding bound"
-     , Option ['a'] ["unwind_annotation"]
-         (ReqArg (\a o -> return $ o {optLoopAnn = Just $ ann a}) "{assume|assert}")
-         "unwinding annotation"
-     , Option ['g'] ["vcgen"]
-         (ReqArg (\a o -> return $ o {optVCGen = vc a}) "vcgen")
-         "VCGen algorithm vcgen={psp,pspplus,gps,gpsplus,pcnf,pcnfplus,gcnf,gcnfplus,plin,plinplus,glin,glinplus}"
+     , Option [] ["sa-for"] (NoArg OsaFor)
+       "FOR translation"
+     , Option [] ["sa-havoc"] (NoArg OsaHavoc)
+       "HAVOC translation (default)"
+     , Option [] ["bmc"] (ReqArg (\s -> Obmc (read s)) "k")
+       "unwind loops (k = 1 and unwinding assumption by default)"
+     , Option [] ["assume"] (NoArg Oassume)
+       "use unwinding assumption (default)"
+     , Option [] ["assert"] (NoArg Oassert)
+       "use unwinding assertion"
+     , Option [] ["debug"] (NoArg Odebug)
+       "debug intermediate representation"
+     , Option [] ["out-sa"] (ReqArg (\s -> OoutSA s) "FILE")
+       "output SA program"
+     , Option [] ["out-vc"] (ReqArg (\s -> OoutVC s) "FILE")
+       "output VC"
+     , Option [] ["out-vc-tex"] (ReqArg (\s -> OoutVCTex s) "FILE")
+       "output tex format"
+     , Option [] ["out-why3"] (ReqArg (\s -> OoutWhy3 s) "FILE")
+       "output why3 format"
+     , Option [] ["why3"] (NoArg Owhy3)
+       "call why3 with VCs"
+     , Option [] ["vcgen"] (ReqArg (\s -> OVCGen s) "VCGen")
+       "select VCGen (default: lin)"
+     , Option [] ["vcgenop"] (ReqArg (\s -> OVOp s) "VCGenOp")
+       "select option for VCGen (default: pa; possible: p,pa,g,ga)"
      ]
 
-vc :: String -> VCGen
-vc "psp" = PSP
-vc "pspplus" = PSPPlus
-vc "gsp" = GSP
-vc "gspplus" = GSPPlus
-vc "pcnf" = PCNF
-vc "pcnfplus" = PCNFPlus
-vc "gcnf" = GCNF
-vc "gcnfplus" = GCNFPlus
-vc "plin" = PLin
-vc "plinplus" = PLinPlus
-vc "glin" = GLin
-vc "glinplus" = GLinPlus
+uHeader :: String
+uHeader = "Usage: \n\n while-vcgen [OPTION...] file_name\n"
 
-ann :: String -> UnwindAnnotation
-ann "assume" = AssumeAnn
-ann "assert" = AssertAnn
+uInfo :: String
+uInfo = usageInfo uHeader options
 
-showVersion :: t -> IO b
-showVersion _ = do putStrLn "while_lang_vcge 0.1"
-                   exitWith ExitSuccess
-
-showHelp :: t -> IO b
-showHelp _ = (putStrLn $ usageInfo usage_header options)
-             >>  exitWith ExitSuccess
-  where
-    usage_header = "Usage: \n\n while-vcgen [OPTION...] file_name\n"
-
-optionsParser :: [String] -> IO (Either String Opts)
+optionsParser :: [String] -> IO [Opt]
 optionsParser a = 
   do case getOpt Permute options a of
-       (o, [], [])    -> do opts <- foldl (>>=) (return $ optsInit) o 
-                            return.Left $ "File name missing"
-       (o, (f:_),[])  -> do opts <- foldl (>>=) (return $ optsInit {optFile = f}) o 
-                            return.Right $ opts
+       (o, [],[])  -> return o
+       (o, (f:_),[])  -> return $ (Ofile f):o
+       (_,_,e) -> ioError (userError (concat e ++ uInfo))

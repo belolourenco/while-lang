@@ -92,4 +92,6 @@ instance Pretty Stm where
   pretty (Stry s1 s2)       = (text "try") $$
                               (nest 2 $ pretty s1) $$
                               (text "catch") $$
-                              (nest 2 $ pretty s2)    
+                              (nest 2 $ pretty s2) $$
+                              (text "endc")
+  pretty Sthrow             = text "throw"

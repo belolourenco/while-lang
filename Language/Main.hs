@@ -1,10 +1,12 @@
 module Main where
 
 import System.Environment
+import System.Directory
 import Text.PrettyPrint
 import Control.Monad.State
 import System.Exit
-import  System.Process
+import System.Process
+import Data.List
 
 import Language.Why3.PP
 
@@ -17,110 +19,109 @@ import Language.WhileSA.Types
 import Language.WhileSA.PrettyPrinter
 import Language.Translations.TranslationFor
 import Language.Translations.TranslationHavoc
+import Language.VCGens.Base
 import Language.VCGens.FrontEnd
 import Language.Logic.Types
 import Language.Logic.Why3Encoder
+import Language.Logic.TexPrinter
 import Language.LoopTreatement.LoopUnroll
 
-parse_while_lang :: IO ()
-parse_while_lang = do 
-  r <- getArgs >>= loadFile.head
-  case r of
-    (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ smt
+showVersion :: Bool -> IO ()
+showVersion False = return ()
+showVersion _     = (putStrLn "while-lang-vcgen 0.2")
+                    >> exitWith ExitSuccess
+
+showHelp ::  Bool -> IO ()
+showHelp False = return ()
+showHelp _     = (putStrLn uInfo)
+                 >> exitWith ExitSuccess
+
+getProg :: Maybe File -> IO Stm
+getProg Nothing =
+  do parseOut <- loadStdin
+     case parseOut of
+       (Left e) -> putStrLn e >> exitFailure
+       (Right stm) -> return stm
+getProg (Just f) =
+  do parseOut <- loadFile f
+     case parseOut of
+       (Left e) -> putStrLn e >> exitFailure
+       (Right stm) -> return stm
+
+loopUnroll :: Maybe Int -> Bool -> Stm -> Stm
+loopUnroll Nothing _ s = s
+loopUnroll (Just k) True s = loop_unroll AssertAnn k s
+loopUnroll (Just k) False s = loop_unroll AssumeAnn k s
+
+saTranslation :: Bool -> Stm -> StmSA
+saTranslation True s = forLoopTrans s
+saTranslation False s = havocTrans s
+
+getVCGen :: Maybe String -> IO VCGen
+getVCGen Nothing = return LIN
+getVCGen (Just "sp" ) = return SP
+getVCGen (Just "cnf") = return CNF
+getVCGen (Just "lin") = return LIN
+getVCGen (Just _    ) = ioError (userError "invalid vcgen")
+
+getVCGenOp :: Maybe String -> IO VOp
+getVCGenOp Nothing     = return VCPA
+getVCGenOp (Just "p" ) = return VCP
+getVCGenOp (Just "pa") = return VCPA
+getVCGenOp (Just "g" ) = return VCG
+getVCGenOp (Just "ga") = return VCGA
+getVCGenOp (Just _   ) = ioError (userError "invalid vcgen option")
+
+stdout :: (Pretty a) => Bool -> String -> a -> IO ()
+stdout False _ _ = return ()
+stdout _     s p = let s' = "\n** " ++ s ++ " **"
+                   in putStrLn s' >> (putStrLn.render.pretty $ p)
+
+fileOut :: (Pretty a) => Maybe File -> a -> IO ()
+fileOut Nothing _  = return ()
+fileOut (Just f) x = (writeFile f).render.pretty $ x
 
 
-unwind :: IO()
-unwind = do
-  (file:annotation:bound:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> putStrLn.render.pretty $ loop_unroll (ann annotation) (read bound) stm
+callWhy3 :: Bool -> [LExpr] -> IO ()
+callWhy3 False _ = return ()
+callWhy3 _ vcs   =
+  do let dir = "why3-temp"
+         createDirectoryIfMissing False dir
+         let file = dir ++ "/vcs.why"
+         fileOut (Just file) (ppTh $ logic2why3theory vcs)
+         putStrLn $ "Wrote in " ++ file
+         readProcess "why3" ["ide",file] [] >>= putStrLn
+         removeDirectoryRecursive dir
 
-
-pretty_list_vcs :: SetExpr -> IO ()
-pretty_list_vcs s = putStrLn.render.vcat $ aux 0 $ map pretty s
-  where
-    aux :: Int -> [Doc] -> [Doc]
-    aux x []    = []
-    aux x (h:t) = (text "\n" <+> int x <+> text "-" <+> h):(aux (x+1) t)
-
-output :: Bool -> SetExpr -> String -> IO ()
-output True s  f = pretty_list_vcs s
-output False s f = (writeFile why3file $ show $ ppTh (setExpr2why3theory s))
-                    >> readProcess "why3" ["ide",why3file] [] >>= putStrLn
-  where why3file = (takeWhile (/='.') f) ++ ".why"
-
-
-translation_to_SAFor :: IO ()
-translation_to_SAFor = do 
-  r <- getArgs >>= loadFile.head
-  case r of
-    (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ forLoopTrans smt
-
-translation_to_SAHavoc :: IO ()
-translation_to_SAHavoc = do 
-  r <- getArgs >>= loadFile.head
-  case r of
-    (Left error) -> putStrLn error
-    (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
-
-vcgen :: IO ()
-vcgen = do 
-  (file:a:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> let list_vcs = vcs (havocTrans stm) (vc a)
-                   in pretty_list_vcs $ list_vcs 
-
-vcgen_why3 :: IO ()
-vcgen_why3 = do 
-  (file:a:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> let list_vcs = vcs (havocTrans stm) (vc a)
-                   in output False list_vcs file
-
--- This is just a temporary solution. See omnigraffle diagram to make a general solution.
-vcgen_iter :: IO ()
-vcgen_iter = do
-  (file:_) <- getArgs
-  content <- loadFile file
-  case content of
-    (Left error) -> putStrLn error
-    (Right stm) -> pretty_list_vcs.vcs_iter $ forLoopTrans stm
-
-main :: IO a
+main :: IO ()
 main = 
   do args <- getArgs
      opts <- optionsParser args
-     case opts of
-       (Left e)  -> putStrLn e >> exitFailure
-       (Right o) -> do fContent <- loadFile $ optFile o
-                       case fContent of
-                            (Left e) -> putStrLn e >> exitFailure
-                            (Right stm) -> translation stm o
+     putStrLn (show opts)
+     showHelp (elem Ohelp opts)
+     showVersion (elem Oversion opts)
+     stmIn <- getProg $ oFile opts
+     stdout (elem Odebug opts) "Original Program" stmIn
+     let stmBmc = loopUnroll (oBmc opts) (elem Oassert opts) stmIn
+     stdout (elem Odebug opts) "Bounded Program" stmBmc
+     let stmSA = saTranslation (elem OsaFor opts) stmBmc
+     stdout (elem Odebug opts) "SA Program" stmSA
+     fileOut (oOutSA opts) stmSA
+     vcgen <- getVCGen $ oVCGen opts
+     vcgenop <- getVCGenOp $ oVOp opts
+     let vcs = generate stmSA vcgen vcgenop
+     stdout (elem Odebug opts) "VCs" vcs
+     fileOut (oOutVC opts) vcs
+     fileOut (oOutVCTex opts) (toTexL vcs)
+     fileOut (oOutWhy3 opts) (ppTh $ logic2why3theory vcs)
+     callWhy3 (elem Owhy3 opts) vcs
   where
-    translation :: Stm -> Opts -> IO a
-    translation stm o@(Opts f v (Just a) (Just b) True _ _ _ pp)
-      = let stm_unnwound   = loop_unroll a b stm
-            stm_translated = havocTrans stm_unnwound
-            vcs_result     = vcs stm_translated v
-        in (output pp vcs_result f) >> exitSuccess
-    translation stm o@(Opts _ v _ _ True _ _ _ pp)
-      = putStrLn "Make sure you selected a bound and an unwinding annotation"
-          >> exitFailure
-    translation stm o@(Opts f v Nothing _ _ True _ _ pp) 
-      = let stm_translated = havocTrans stm
-            vcs_result     = vcs stm_translated v
-        in (output pp vcs_result f) >> exitSuccess
-    translation stm o@(Opts f v Nothing _ _ _ True _ pp) 
-      = let stm_translated = forLoopTrans stm
-            vcs_result     = vcs_iter stm_translated
-        in (output pp vcs_result f) >> exitSuccess
-    translation stm o@(Opts f v Nothing _ _ _ _ True pp)
-      = putStrLn "NOT IMPLEMENTED YET!!!!\n" >> exitFailure
+    oFile o     = find isOfile o     >>= (\(Ofile f) -> Just f)
+    oBmc o      = find isObmc o      >>= (\(Obmc b) -> Just b)
+    oOutSA o    = find isOoutSA o    >>= (\(OoutSA b) -> Just b)
+    oOutVC o    = find isOoutVC o    >>= (\(OoutVC b) -> Just b)
+    oOutVCTex o = find isOoutVCTex o >>= (\(OoutVCTex b) -> Just b)
+    oOutWhy3 o  = find isOoutWhy3 o  >>= (\(OoutWhy3 b) -> Just b)
+    oVCGen o    = find isOVCGen o    >>= (\(OVCGen g) -> Just g)
+    oVOp o      = find isOVOp o      >>= (\(OVOp op) -> Just op)
+

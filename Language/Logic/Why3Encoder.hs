@@ -15,8 +15,7 @@ import Language.Logic.Types
         , mkImpl
         , mkOr
         , mkBigAnd
-        , mkNeg
-        , Expr)
+        , mkNeg)
 
 useImportInt :: Decl
 useImportInt = Use (Just Import) (p "int.Int") Nothing
@@ -24,14 +23,14 @@ useImportInt = Use (Just Import) (p "int.Int") Nothing
 useImportDiv :: Decl
 useImportDiv = Use (Just Import) (p "int.ComputerDivision") Nothing
 
-setExpr2why3theory :: SetExpr -> Theory
-setExpr2why3theory s = Theory (p "WhileLangVCs") 
-                              (useImportInt
-                                :useImportDiv
-                                :(setExpr2why3decl s))
-
-setExpr2why3decl :: SetExpr -> [Decl]
-setExpr2why3decl = (aux 0).setExpr2why3expr
+logic2why3theory :: [LExpr] -> Theory
+logic2why3theory s = Theory (p "WhileLangVCs") 
+                     (useImportInt
+                       :useImportDiv
+                       :(logic2why3decl s))
+  
+logic2why3decl :: [LExpr] -> [Decl]
+logic2why3decl = (aux 0).logic2why3expr
   where aux :: Int -> [Expr] -> [Decl]
         aux _ []    = []
         aux i (h:t) = (mkGoal ("G" ++ (show i)) h)
@@ -40,8 +39,8 @@ setExpr2why3decl = (aux 0).setExpr2why3expr
 saV2str :: VarnameSA -> String
 saV2str = render.pretty
 
-setExpr2why3expr :: SetExpr -> [Expr]
-setExpr2why3expr s = map aux s
+logic2why3expr :: [LExpr] -> [Expr]
+logic2why3expr s = map aux s
   where aux e = mkQuant (mkQuantIntVars $ map saV2str (varsBexp e)) 
                         (bExpr2why3 e)
 

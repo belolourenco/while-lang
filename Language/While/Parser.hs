@@ -58,6 +58,7 @@ statement
   =   try stmAssignment
   <|> try stmTryCatch
   <|> try stmSkip
+  <|> try stmThrow
   <|> try stmAssume
   <|> try stmAssert
   <|> try stmIf
@@ -137,6 +138,9 @@ stmAssignment = do
 -- | Skip statement.
 stmSkip = symbol "skip" >> return Sskip
 
+-- | Skip statement.
+stmThrow = symbol "throw" >> return Sthrow
+
 -- | Assume statement.
 stmAssume = do
   symbol "assume"
@@ -199,6 +203,7 @@ stmTryCatch = do
   s1 <- program
   symbol "catch"
   s2 <- program
+  symbol "endc"
   return $ Stry s1 s2
 
 identifier = P.identifier whileLexer

@@ -1,6 +1,7 @@
 module Main where
 
 import System.Environment
+import System.Directory
 import Text.PrettyPrint
 import Control.Monad.State
 import System.Exit
@@ -24,78 +25,6 @@ import Language.Logic.Types
 import Language.Logic.Why3Encoder
 import Language.Logic.TexPrinter
 import Language.LoopTreatement.LoopUnroll
-
--- parse_while_lang :: IO ()
--- parse_while_lang = do 
---   r <- getArgs >>= loadFile.head
---   case r of
---     (Left error) -> putStrLn error
---     (Right smt)  -> putStrLn.render.pretty $ smt
-
--- translation_to_SAFor :: IO ()
--- translation_to_SAFor = do 
---   r <- getArgs >>= loadFile.head
---   case r of
---     (Left error) -> putStrLn error
---     (Right smt)  -> putStrLn.render.pretty $ forLoopTrans smt
-
--- translation_to_SAHavoc :: IO ()
--- translation_to_SAHavoc = do
---   version:file:_ <- getArgs
---   r <- loadFile file
---   case r of
---     (Left error) -> putStrLn error
---     (Right smt)  -> putStrLn.render.pretty $ havocTrans smt
-
--- vcgen :: IO ()
--- vcgen = do 
---   (file:a:_) <- getArgs
---   content <- loadFile file
---   case content of
---     (Left error) -> putStrLn error
---     (Right stm) -> pretty_list_vcs $ vcs (havocTrans stm) (vc a)
---     where vc :: String -> VCGen
---           vc "psp" = PSP
---           vc "pspplus" = PSPPlus
---           vc "gsp" = GSP
---           vc "gspplus" = GSPPlus
---           vc "pcnf" = PCNF
---           vc "pcnfplus" = PCNFPlus
---           vc "gcnf" = GCNF
---           vc "gcnfplus" = GCNFPlus
---           vc "plin" = PLin
---           vc "plinplus" = PLinPlus
---           vc "glin" = GLin
---           vc "glinplus" = GLinPlus
-
--- -- This is just a temporary solution. See omnigraffle diagram to make a general solution.
--- vcgen_iter :: IO ()
--- vcgen_iter = do
---   (file:_) <- getArgs
---   content <- loadFile file
---   case content of
---     (Left error) -> putStrLn error
---     (Right stm) -> pretty_list_vcs.vcs_iter $ forLoopTrans stm
-
--- unwind :: IO()
--- unwind = do
---   (file:annotation:bound:_) <- getArgs
---   content <- loadFile file
---   case content of
---     (Left error) -> putStrLn error
---     (Right stm) -> putStrLn.render.pretty $ loop_unroll (ann annotation) (read bound) stm
---   where
---     ann :: String -> UnwindAnnotation
---     ann "assume" = AssumeAnn
---     ann "assert" = AssertAnn
-
--- output :: PPFormat -> SetExpr -> String -> IO ()
--- output PPNormal s f = pretty_list_vcs s
--- output PPTex s f = pretty_tex_list_vcs s
--- output PPNone s f = (writeFile why3file $ show $ ppTh (setExpr2why3theory s))
---                     >> readProcess "why3" ["ide",why3file] [] >>= putStrLn
---   where why3file = (takeWhile (/='.') f) ++ ".why"
-
 
 showVersion :: Bool -> IO ()
 showVersion False = return ()
@@ -152,8 +81,17 @@ fileOut :: (Pretty a) => Maybe File -> a -> IO ()
 fileOut Nothing _  = return ()
 fileOut (Just f) x = (writeFile f).render.pretty $ x
 
-texPrint :: Maybe File -> [LExpr] -> IO ()
-texPrint f vcs = fileOut f (toTexL vcs)
+
+callWhy3 :: Bool -> [LExpr] -> IO ()
+callWhy3 False _ = return ()
+callWhy3 _ vcs   =
+  do let dir = "why3-temp"
+         createDirectoryIfMissing False dir
+         let file = dir ++ "/vcs.why"
+         fileOut (Just file) (ppTh $ logic2why3theory vcs)
+         putStrLn $ "Wrote in " ++ file
+         readProcess "why3" ["ide",file] [] >>= putStrLn
+         removeDirectoryRecursive dir
 
 main :: IO ()
 main = 
@@ -165,21 +103,25 @@ main =
      stmIn <- getProg $ oFile opts
      stdout (elem Odebug opts) "Original Program" stmIn
      let stmBmc = loopUnroll (oBmc opts) (elem Oassert opts) stmIn
+     stdout (elem Odebug opts) "Bounded Program" stmBmc
      let stmSA = saTranslation (elem OsaFor opts) stmBmc
-     fileOut (oOutSA opts) stmSA
      stdout (elem Odebug opts) "SA Program" stmSA
+     fileOut (oOutSA opts) stmSA
      vcgen <- getVCGen $ oVCGen opts
      vcgenop <- getVCGenOp $ oVOp opts
      let vcs = generate stmSA vcgen vcgenop
-     fileOut (oOutVC opts) vcs
-     texPrint (oOutVCTex opts) vcs
      stdout (elem Odebug opts) "VCs" vcs
+     fileOut (oOutVC opts) vcs
+     fileOut (oOutVCTex opts) (toTexL vcs)
+     fileOut (oOutWhy3 opts) (ppTh $ logic2why3theory vcs)
+     callWhy3 (elem Owhy3 opts) vcs
   where
     oFile o     = find isOfile o     >>= (\(Ofile f) -> Just f)
     oBmc o      = find isObmc o      >>= (\(Obmc b) -> Just b)
     oOutSA o    = find isOoutSA o    >>= (\(OoutSA b) -> Just b)
     oOutVC o    = find isOoutVC o    >>= (\(OoutVC b) -> Just b)
     oOutVCTex o = find isOoutVCTex o >>= (\(OoutVCTex b) -> Just b)
+    oOutWhy3 o  = find isOoutWhy3 o  >>= (\(OoutWhy3 b) -> Just b)
     oVCGen o    = find isOVCGen o    >>= (\(OVCGen g) -> Just g)
     oVOp o      = find isOVOp o      >>= (\(OVOp op) -> Just op)
 

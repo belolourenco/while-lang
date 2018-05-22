@@ -20,6 +20,8 @@ data Opt =
   | OoutSA File
   | OoutVC File
   | OoutVCTex File
+  | OoutWhy3 File
+  | Owhy3
   | OVCGen String
   | OVOp String
   | Oversion
@@ -52,6 +54,10 @@ options =
        "output VC"
      , Option [] ["out-vc-tex"] (ReqArg (\s -> OoutVCTex s) "FILE")
        "output tex format"
+     , Option [] ["out-why3"] (ReqArg (\s -> OoutWhy3 s) "FILE")
+       "output why3 format"
+     , Option [] ["why3"] (NoArg Owhy3)
+       "call why3 with VCs"
      , Option [] ["vcgen"] (ReqArg (\s -> OVCGen s) "VCGen")
        "select VCGen (default: lin)"
      , Option [] ["vcgenop"] (ReqArg (\s -> OVOp s) "VCGenOp")

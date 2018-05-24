@@ -6,7 +6,6 @@ import Language.VCGens.Base
 import Language.VCGens.SPGeneralization
 import Language.VCGens.CNFGeneralization
 import Language.VCGens.LinGeneralization
-import Language.VCGens.Linear_Iter
 
 data VCGen = SP | CNF | LIN
 
@@ -26,7 +25,3 @@ generate s LIN op | op == VCP || op == VCPA =
 generate s LIN op | op == VCG || op == VCGA =
   let (psi,_,_,_,v) = lin op s 
   in [mkImpl psi v]
-
--- This is just a temporary solution. See omnigraffle diagram for a cleaner solution
-vcs_iter :: StmSA -> [LExpr]
-vcs_iter s = let (psi, gamma, t) = lin_iter s in (t ++ [gamma] ++ [psi])

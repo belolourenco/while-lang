@@ -1,5 +1,7 @@
 module Language.VCGens.CNFGeneralization where
 
+import Debug.Trace
+
 import Language.Logic.Types
 import Language.WhileSA.Types
 import Language.VCGens.Base
@@ -47,6 +49,30 @@ cnf op (pi,phi,gamma, StrySA s1 s2) =
       cnf op (pi,mkAnd phi omg1,mkAnd gamma mu1,s2)
 cnf _ (pi,phi,psi, SthrowSA) =
   (mkImpl pi BfalseSA, mkImpl pi BfalseSA, BtrueSA, BtrueSA, [])
+cnf op (pi,phi,psi,SforInvSA i b u inv s) | op == VCP || op == VCPA =
+  trace "VC Geneneration with FOR loops is still experimental"
+  (BtrueSA,
+   mkAnd inv (mkNeg b),
+   omg1,
+   mu1,
+    [mkImpl (mkAnd phi psi) (applyRnm i inv),
+      mkImpl (mkBigAnd [pi,b,inv,phi1,gamma1]) (applyRnm u inv)] ++
+    v1
+   )
+  where
+    (phi1,gamma1,omg1,mu1,v1) = cnf op (mkAnd pi b,BtrueSA,mkAnd inv b,s)
+cnf op (pi,phi,psi,SforInvSA i b u inv s) | op == VCG || op == VCGA =
+  trace "VC Geneneration with FOR loops is still experimental"
+  (BtrueSA,
+   mkAnd inv (mkNeg b),
+   omg1,
+   mu1,
+    [mkImpl psi (applyRnm i inv),
+      mkImpl (mkBigAnd [pi,b,inv,gamma1]) (applyRnm u inv)] ++
+    v1
+   )
+  where
+    (phi1,gamma1,omg1,mu1,v1) = cnf op (mkAnd pi b, BtrueSA,mkAnd inv b,s)
 cnf VCP (pi,phi,gamma, SassertSA e) =
   (BtrueSA, BtrueSA
   , mkImpl pi BfalseSA , mkImpl pi BfalseSA

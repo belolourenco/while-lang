@@ -1,5 +1,7 @@
 module Language.VCGens.SPGeneralization where
 
+import Debug.Trace
+
 import Language.Logic.Types
 import Language.WhileSA.Types
 import Language.VCGens.Base
@@ -40,6 +42,30 @@ sp op (phi,psi, StrySA s1 s2) =
   where
     (f1,psi1,omega1,mu1,v1) = sp op (phi,psi,s1)
     (f2,psi2,omega2,mu2,v2) = sp op (mkAnd phi omega1,mkAnd psi mu1, s2)
+sp op (phi,psi,SforInvSA i b u inv s) | op == VCP || op == VCPA =
+  trace "VC Geneneration with FOR loops is still experimental"
+  (BtrueSA,
+   mkAnd inv (mkNeg b),
+   omg1,
+   mu1,
+    [mkImpl (mkAnd phi psi) (applyRnm i inv),
+      mkImpl (mkBigAnd [inv,b,phi1,gamma1]) (applyRnm u inv)] ++
+    v1
+   )
+  where
+    (phi1,gamma1,omg1,mu1,v1) = sp op (BtrueSA,mkAnd inv b,s)
+sp op (phi,psi,SforInvSA i b u inv s) | op == VCG || op == VCGA =
+  trace "VC Geneneration with FOR loops is still experimental"
+  (BtrueSA,
+   mkAnd inv (mkNeg b),
+   omg1,
+   mu1,
+    [mkImpl psi (applyRnm i inv),
+      mkImpl (mkBigAnd [inv,b,gamma1]) (applyRnm u inv)] ++
+    v1
+   )
+  where
+    (phi1,gamma1,omg1,mu1,v1) = sp op (BtrueSA,mkAnd inv b,s)
 sp _ (phi,psi, SthrowSA) = (BfalseSA, BfalseSA, BtrueSA, BtrueSA, [])
 sp VCP (phi,psi, SassertSA e) = 
         (BtrueSA, BtrueSA, BfalseSA, BfalseSA, [mkImpl (mkAnd phi psi) e])

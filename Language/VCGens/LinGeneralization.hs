@@ -1,5 +1,7 @@
 module Language.VCGens.LinGeneralization where
 
+import Debug.Trace
+
 import Language.Logic.Types
 import Language.WhileSA.Types
 import Language.VCGens.Base
@@ -21,6 +23,18 @@ lin op (SifSA b st sf) =
     (phi1,gamma1,omg1,mu1,delta1) = lin op st
     (phi2,gamma2,omg2,mu2,delta2) = lin op sf
 lin op SthrowSA = (BfalseSA,BfalseSA,BtrueSA,BtrueSA,BtrueSA)
+lin op (SforInvSA i b u inv s) =
+  trace "VC Geneneration with FOR loops is still experimental"
+  (BtrueSA,
+   mkAnd inv (mkNeg b),
+   omg1,
+   mu1,
+   mkBigAnd [applyRnm i inv,
+    mkImpl (mkAnd inv b)
+     (mkAnd delta1 (mkImpl (mkAnd phi1 gamma1) (applyRnm u inv)))]
+   )
+  where
+    (phi1,gamma1,omg1,mu1,delta1) = lin op s
 lin op (StrySA s1 s2) | op == VCP || op == VCPA = -- Partial Context
   (mkOr phi1 (mkAnd omg1 phi2)
   ,mkOr gamma1 (mkAnd mu1 gamma2)
